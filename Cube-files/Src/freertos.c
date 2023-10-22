@@ -49,9 +49,6 @@
 /* USER CODE END Variables */
 osThreadId mainTaskNameHandle;
 osThreadId printTaskNameHandle;
-osMessageQId printQueueHandle;
-uint8_t printQueueBuffer[ 100 * sizeof( uint8_t ) ];
-osStaticMessageQDef_t printQueueControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -128,11 +125,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-
-  /* Create the queue(s) */
-  /* definition and creation of printQueue */
-  osMessageQStaticDef(printQueue, 100, uint8_t, printQueueBuffer, &printQueueControlBlock);
-  printQueueHandle = osMessageCreate(osMessageQ(printQueue), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
