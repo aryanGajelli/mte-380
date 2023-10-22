@@ -1,0 +1,112 @@
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"mainTask.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "../Src/mainTask.c"
+  20              		.section	.text.mainTask,"ax",%progbits
+  21              		.align	1
+  22              		.global	mainTask
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	mainTask:
+  28              	.LVL0:
+  29              	.LFB135:
+   1:../Src/mainTask.c **** #include "stm32f4xx.h"
+   2:../Src/mainTask.c **** #include "stm32f4xx_hal.h"
+   3:../Src/mainTask.c **** #include "FreeRTOS.h"
+   4:../Src/mainTask.c **** #include "task.h"
+   5:../Src/mainTask.c **** #include "main.h"
+   6:../Src/mainTask.c **** 
+   7:../Src/mainTask.c **** 
+   8:../Src/mainTask.c **** 
+   9:../Src/mainTask.c **** void mainTask(void *pvParameters){
+  30              		.loc 1 9 34 view -0
+  31              		.cfi_startproc
+  32              		@ args = 0, pretend = 0, frame = 0
+  33              		@ frame_needed = 0, uses_anonymous_args = 0
+  34              		.loc 1 9 34 is_stmt 0 view .LVU1
+  35 0000 10B5     		push	{r4, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 8
+  38              		.cfi_offset 4, -8
+  39              		.cfi_offset 14, -4
+  10:../Src/mainTask.c ****     TickType_t i = 0;
+  40              		.loc 1 10 5 is_stmt 1 view .LVU2
+  41              	.LVL1:
+  42              		.loc 1 10 16 is_stmt 0 view .LVU3
+  43 0002 0024     		movs	r4, #0
+  44              	.LVL2:
+  45              	.L2:
+  11:../Src/mainTask.c ****     while (1){
+  46              		.loc 1 11 5 is_stmt 1 discriminator 1 view .LVU4
+  12:../Src/mainTask.c ****         // blink led
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s 			page 2
+
+
+  13:../Src/mainTask.c ****         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+  47              		.loc 1 13 9 discriminator 1 view .LVU5
+  48 0004 2021     		movs	r1, #32
+  49 0006 0748     		ldr	r0, .L4
+  50 0008 FFF7FEFF 		bl	HAL_GPIO_TogglePin
+  51              	.LVL3:
+  14:../Src/mainTask.c ****         vTaskDelay((i+=50)%1000);
+  52              		.loc 1 14 9 discriminator 1 view .LVU6
+  53              		.loc 1 14 22 is_stmt 0 discriminator 1 view .LVU7
+  54 000c 3234     		adds	r4, r4, #50
+  55              	.LVL4:
+  56              		.loc 1 14 9 discriminator 1 view .LVU8
+  57 000e 064B     		ldr	r3, .L4+4
+  58 0010 A3FB0423 		umull	r2, r3, r3, r4
+  59 0014 9B09     		lsrs	r3, r3, #6
+  60 0016 4FF47A70 		mov	r0, #1000
+  61 001a 00FB1340 		mls	r0, r0, r3, r4
+  62 001e FFF7FEFF 		bl	vTaskDelay
+  63              	.LVL5:
+  11:../Src/mainTask.c ****     while (1){
+  64              		.loc 1 11 11 is_stmt 1 discriminator 1 view .LVU9
+  65 0022 EFE7     		b	.L2
+  66              	.L5:
+  67              		.align	2
+  68              	.L4:
+  69 0024 00000240 		.word	1073872896
+  70 0028 D34D6210 		.word	274877907
+  71              		.cfi_endproc
+  72              	.LFE135:
+  74              		.text
+  75              	.Letext0:
+  76              		.file 2 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+  77              		.file 3 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+  78              		.file 4 "Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f401xe.h"
+  79              		.file 5 "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h"
+  80              		.file 6 "Middlewares/Third_Party/FreeRTOS/Source/include/task.h"
+  81              		.file 7 "Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h"
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 mainTask.c
+C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s:21     .text.mainTask:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s:27     .text.mainTask:0000000000000000 mainTask
+C:\Users\argaj\AppData\Local\Temp\ccVSwnya.s:69     .text.mainTask:0000000000000024 $d
+
+UNDEFINED SYMBOLS
+HAL_GPIO_TogglePin
+vTaskDelay

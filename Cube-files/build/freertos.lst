@@ -1,0 +1,607 @@
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"freertos.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Src/freertos.c"
+  20              		.section	.text.mainTask,"ax",%progbits
+  21              		.align	1
+  22              		.weak	mainTask
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	mainTask:
+  28              	.LFB139:
+   1:Src/freertos.c **** /* USER CODE BEGIN Header */
+   2:Src/freertos.c **** /**
+   3:Src/freertos.c ****   ******************************************************************************
+   4:Src/freertos.c ****   * File Name          : freertos.c
+   5:Src/freertos.c ****   * Description        : Code for freertos applications
+   6:Src/freertos.c ****   ******************************************************************************
+   7:Src/freertos.c ****   * @attention
+   8:Src/freertos.c ****   *
+   9:Src/freertos.c ****   * Copyright (c) 2023 STMicroelectronics.
+  10:Src/freertos.c ****   * All rights reserved.
+  11:Src/freertos.c ****   *
+  12:Src/freertos.c ****   * This software is licensed under terms that can be found in the LICENSE file
+  13:Src/freertos.c ****   * in the root directory of this software component.
+  14:Src/freertos.c ****   * If no LICENSE file comes with this software, it is provided AS-IS.
+  15:Src/freertos.c ****   *
+  16:Src/freertos.c ****   ******************************************************************************
+  17:Src/freertos.c ****   */
+  18:Src/freertos.c **** /* USER CODE END Header */
+  19:Src/freertos.c **** 
+  20:Src/freertos.c **** /* Includes ------------------------------------------------------------------*/
+  21:Src/freertos.c **** #include "FreeRTOS.h"
+  22:Src/freertos.c **** #include "task.h"
+  23:Src/freertos.c **** #include "main.h"
+  24:Src/freertos.c **** #include "cmsis_os.h"
+  25:Src/freertos.c **** 
+  26:Src/freertos.c **** /* Private includes ----------------------------------------------------------*/
+  27:Src/freertos.c **** /* USER CODE BEGIN Includes */
+  28:Src/freertos.c **** 
+  29:Src/freertos.c **** /* USER CODE END Includes */
+  30:Src/freertos.c **** 
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 2
+
+
+  31:Src/freertos.c **** /* Private typedef -----------------------------------------------------------*/
+  32:Src/freertos.c **** /* USER CODE BEGIN PTD */
+  33:Src/freertos.c **** 
+  34:Src/freertos.c **** /* USER CODE END PTD */
+  35:Src/freertos.c **** 
+  36:Src/freertos.c **** /* Private define ------------------------------------------------------------*/
+  37:Src/freertos.c **** /* USER CODE BEGIN PD */
+  38:Src/freertos.c **** 
+  39:Src/freertos.c **** /* USER CODE END PD */
+  40:Src/freertos.c **** 
+  41:Src/freertos.c **** /* Private macro -------------------------------------------------------------*/
+  42:Src/freertos.c **** /* USER CODE BEGIN PM */
+  43:Src/freertos.c **** 
+  44:Src/freertos.c **** /* USER CODE END PM */
+  45:Src/freertos.c **** 
+  46:Src/freertos.c **** /* Private variables ---------------------------------------------------------*/
+  47:Src/freertos.c **** /* USER CODE BEGIN Variables */
+  48:Src/freertos.c **** 
+  49:Src/freertos.c **** /* USER CODE END Variables */
+  50:Src/freertos.c **** osThreadId mainTaskNameHandle;
+  51:Src/freertos.c **** osThreadId printTaskNameHandle;
+  52:Src/freertos.c **** osMessageQId printQueueHandle;
+  53:Src/freertos.c **** uint8_t printQueueBuffer[ 100 * sizeof( uint8_t ) ];
+  54:Src/freertos.c **** osStaticMessageQDef_t printQueueControlBlock;
+  55:Src/freertos.c **** 
+  56:Src/freertos.c **** /* Private function prototypes -----------------------------------------------*/
+  57:Src/freertos.c **** /* USER CODE BEGIN FunctionPrototypes */
+  58:Src/freertos.c **** 
+  59:Src/freertos.c **** /* USER CODE END FunctionPrototypes */
+  60:Src/freertos.c **** 
+  61:Src/freertos.c **** void mainTask(void const * argument);
+  62:Src/freertos.c **** extern void printTask(void const * argument);
+  63:Src/freertos.c **** 
+  64:Src/freertos.c **** void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
+  65:Src/freertos.c **** 
+  66:Src/freertos.c **** /* GetIdleTaskMemory prototype (linked to static allocation support) */
+  67:Src/freertos.c **** void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskS
+  68:Src/freertos.c **** 
+  69:Src/freertos.c **** /* GetTimerTaskMemory prototype (linked to static allocation support) */
+  70:Src/freertos.c **** void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTa
+  71:Src/freertos.c **** 
+  72:Src/freertos.c **** /* Hook prototypes */
+  73:Src/freertos.c **** void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
+  74:Src/freertos.c **** 
+  75:Src/freertos.c **** /* USER CODE BEGIN 4 */
+  76:Src/freertos.c **** __weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+  77:Src/freertos.c **** {
+  78:Src/freertos.c ****    /* Run time stack overflow checking is performed if
+  79:Src/freertos.c ****    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+  80:Src/freertos.c ****    called if a stack overflow is detected. */
+  81:Src/freertos.c **** }
+  82:Src/freertos.c **** /* USER CODE END 4 */
+  83:Src/freertos.c **** 
+  84:Src/freertos.c **** /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
+  85:Src/freertos.c **** static StaticTask_t xIdleTaskTCBBuffer;
+  86:Src/freertos.c **** static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
+  87:Src/freertos.c **** 
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 3
+
+
+  88:Src/freertos.c **** void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskS
+  89:Src/freertos.c **** {
+  90:Src/freertos.c ****   *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+  91:Src/freertos.c ****   *ppxIdleTaskStackBuffer = &xIdleStack[0];
+  92:Src/freertos.c ****   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+  93:Src/freertos.c ****   /* place for user code */
+  94:Src/freertos.c **** }
+  95:Src/freertos.c **** /* USER CODE END GET_IDLE_TASK_MEMORY */
+  96:Src/freertos.c **** 
+  97:Src/freertos.c **** /* USER CODE BEGIN GET_TIMER_TASK_MEMORY */
+  98:Src/freertos.c **** static StaticTask_t xTimerTaskTCBBuffer;
+  99:Src/freertos.c **** static StackType_t xTimerStack[configTIMER_TASK_STACK_DEPTH];
+ 100:Src/freertos.c **** 
+ 101:Src/freertos.c **** void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTa
+ 102:Src/freertos.c **** {
+ 103:Src/freertos.c ****   *ppxTimerTaskTCBBuffer = &xTimerTaskTCBBuffer;
+ 104:Src/freertos.c ****   *ppxTimerTaskStackBuffer = &xTimerStack[0];
+ 105:Src/freertos.c ****   *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
+ 106:Src/freertos.c ****   /* place for user code */
+ 107:Src/freertos.c **** }
+ 108:Src/freertos.c **** /* USER CODE END GET_TIMER_TASK_MEMORY */
+ 109:Src/freertos.c **** 
+ 110:Src/freertos.c **** /**
+ 111:Src/freertos.c ****   * @brief  FreeRTOS initialization
+ 112:Src/freertos.c ****   * @param  None
+ 113:Src/freertos.c ****   * @retval None
+ 114:Src/freertos.c ****   */
+ 115:Src/freertos.c **** void MX_FREERTOS_Init(void) {
+ 116:Src/freertos.c ****   /* USER CODE BEGIN Init */
+ 117:Src/freertos.c **** 
+ 118:Src/freertos.c ****   /* USER CODE END Init */
+ 119:Src/freertos.c **** 
+ 120:Src/freertos.c ****   /* USER CODE BEGIN RTOS_MUTEX */
+ 121:Src/freertos.c ****   /* add mutexes, ... */
+ 122:Src/freertos.c ****   /* USER CODE END RTOS_MUTEX */
+ 123:Src/freertos.c **** 
+ 124:Src/freertos.c ****   /* USER CODE BEGIN RTOS_SEMAPHORES */
+ 125:Src/freertos.c ****   /* add semaphores, ... */
+ 126:Src/freertos.c ****   /* USER CODE END RTOS_SEMAPHORES */
+ 127:Src/freertos.c **** 
+ 128:Src/freertos.c ****   /* USER CODE BEGIN RTOS_TIMERS */
+ 129:Src/freertos.c ****   /* start timers, add new ones, ... */
+ 130:Src/freertos.c ****   /* USER CODE END RTOS_TIMERS */
+ 131:Src/freertos.c **** 
+ 132:Src/freertos.c ****   /* Create the queue(s) */
+ 133:Src/freertos.c ****   /* definition and creation of printQueue */
+ 134:Src/freertos.c ****   osMessageQStaticDef(printQueue, 100, uint8_t, printQueueBuffer, &printQueueControlBlock);
+ 135:Src/freertos.c ****   printQueueHandle = osMessageCreate(osMessageQ(printQueue), NULL);
+ 136:Src/freertos.c **** 
+ 137:Src/freertos.c ****   /* USER CODE BEGIN RTOS_QUEUES */
+ 138:Src/freertos.c ****   /* add queues, ... */
+ 139:Src/freertos.c ****   /* USER CODE END RTOS_QUEUES */
+ 140:Src/freertos.c **** 
+ 141:Src/freertos.c ****   /* Create the thread(s) */
+ 142:Src/freertos.c ****   /* definition and creation of mainTaskName */
+ 143:Src/freertos.c ****   osThreadDef(mainTaskName, mainTask, osPriorityHigh, 0, 512);
+ 144:Src/freertos.c ****   mainTaskNameHandle = osThreadCreate(osThread(mainTaskName), NULL);
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 4
+
+
+ 145:Src/freertos.c **** 
+ 146:Src/freertos.c ****   /* definition and creation of printTaskName */
+ 147:Src/freertos.c ****   osThreadDef(printTaskName, printTask, osPriorityLow, 0, 128);
+ 148:Src/freertos.c ****   printTaskNameHandle = osThreadCreate(osThread(printTaskName), NULL);
+ 149:Src/freertos.c **** 
+ 150:Src/freertos.c ****   /* USER CODE BEGIN RTOS_THREADS */
+ 151:Src/freertos.c ****   /* add threads, ... */
+ 152:Src/freertos.c ****   /* USER CODE END RTOS_THREADS */
+ 153:Src/freertos.c **** 
+ 154:Src/freertos.c **** }
+ 155:Src/freertos.c **** 
+ 156:Src/freertos.c **** /* USER CODE BEGIN Header_mainTask */
+ 157:Src/freertos.c **** /**
+ 158:Src/freertos.c ****   * @brief  Function implementing the mainTaskName thread.
+ 159:Src/freertos.c ****   * @param  argument: Not used
+ 160:Src/freertos.c ****   * @retval None
+ 161:Src/freertos.c ****   */
+ 162:Src/freertos.c **** /* USER CODE END Header_mainTask */
+ 163:Src/freertos.c **** __weak void mainTask(void const * argument)
+ 164:Src/freertos.c **** {
+  29              		.loc 1 164 1 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              	.LVL0:
+  34              		.loc 1 164 1 is_stmt 0 view .LVU1
+  35 0000 08B5     		push	{r3, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 8
+  38              		.cfi_offset 3, -8
+  39              		.cfi_offset 14, -4
+  40              	.LVL1:
+  41              	.L2:
+ 165:Src/freertos.c ****   /* USER CODE BEGIN mainTask */
+ 166:Src/freertos.c ****   /* Infinite loop */
+ 167:Src/freertos.c ****   for(;;)
+  42              		.loc 1 167 3 is_stmt 1 discriminator 1 view .LVU2
+ 168:Src/freertos.c ****   {
+ 169:Src/freertos.c ****     osDelay(1);
+  43              		.loc 1 169 5 discriminator 1 view .LVU3
+  44 0002 0120     		movs	r0, #1
+  45 0004 FFF7FEFF 		bl	osDelay
+  46              	.LVL2:
+ 167:Src/freertos.c ****   {
+  47              		.loc 1 167 3 discriminator 1 view .LVU4
+  48 0008 FBE7     		b	.L2
+  49              		.cfi_endproc
+  50              	.LFE139:
+  52              		.section	.text.vApplicationStackOverflowHook,"ax",%progbits
+  53              		.align	1
+  54              		.weak	vApplicationStackOverflowHook
+  55              		.syntax unified
+  56              		.thumb
+  57              		.thumb_func
+  59              	vApplicationStackOverflowHook:
+  60              	.LVL3:
+  61              	.LFB135:
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 5
+
+
+  77:Src/freertos.c ****    /* Run time stack overflow checking is performed if
+  62              		.loc 1 77 1 view -0
+  63              		.cfi_startproc
+  64              		@ args = 0, pretend = 0, frame = 0
+  65              		@ frame_needed = 0, uses_anonymous_args = 0
+  66              		@ link register save eliminated.
+  81:Src/freertos.c **** /* USER CODE END 4 */
+  67              		.loc 1 81 1 view .LVU6
+  68 0000 7047     		bx	lr
+  69              		.cfi_endproc
+  70              	.LFE135:
+  72              		.section	.text.vApplicationGetIdleTaskMemory,"ax",%progbits
+  73              		.align	1
+  74              		.global	vApplicationGetIdleTaskMemory
+  75              		.syntax unified
+  76              		.thumb
+  77              		.thumb_func
+  79              	vApplicationGetIdleTaskMemory:
+  80              	.LVL4:
+  81              	.LFB136:
+  89:Src/freertos.c ****   *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+  82              		.loc 1 89 1 view -0
+  83              		.cfi_startproc
+  84              		@ args = 0, pretend = 0, frame = 0
+  85              		@ frame_needed = 0, uses_anonymous_args = 0
+  86              		@ link register save eliminated.
+  90:Src/freertos.c ****   *ppxIdleTaskStackBuffer = &xIdleStack[0];
+  87              		.loc 1 90 3 view .LVU8
+  90:Src/freertos.c ****   *ppxIdleTaskStackBuffer = &xIdleStack[0];
+  88              		.loc 1 90 25 is_stmt 0 view .LVU9
+  89 0000 034B     		ldr	r3, .L6
+  90 0002 0360     		str	r3, [r0]
+  91:Src/freertos.c ****   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+  91              		.loc 1 91 3 is_stmt 1 view .LVU10
+  91:Src/freertos.c ****   *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+  92              		.loc 1 91 27 is_stmt 0 view .LVU11
+  93 0004 034B     		ldr	r3, .L6+4
+  94 0006 0B60     		str	r3, [r1]
+  92:Src/freertos.c ****   /* place for user code */
+  95              		.loc 1 92 3 is_stmt 1 view .LVU12
+  92:Src/freertos.c ****   /* place for user code */
+  96              		.loc 1 92 25 is_stmt 0 view .LVU13
+  97 0008 8023     		movs	r3, #128
+  98 000a 1360     		str	r3, [r2]
+  94:Src/freertos.c **** /* USER CODE END GET_IDLE_TASK_MEMORY */
+  99              		.loc 1 94 1 view .LVU14
+ 100 000c 7047     		bx	lr
+ 101              	.L7:
+ 102 000e 00BF     		.align	2
+ 103              	.L6:
+ 104 0010 00000000 		.word	xIdleTaskTCBBuffer
+ 105 0014 00000000 		.word	xIdleStack
+ 106              		.cfi_endproc
+ 107              	.LFE136:
+ 109              		.section	.text.vApplicationGetTimerTaskMemory,"ax",%progbits
+ 110              		.align	1
+ 111              		.global	vApplicationGetTimerTaskMemory
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 6
+
+
+ 112              		.syntax unified
+ 113              		.thumb
+ 114              		.thumb_func
+ 116              	vApplicationGetTimerTaskMemory:
+ 117              	.LVL5:
+ 118              	.LFB137:
+ 102:Src/freertos.c ****   *ppxTimerTaskTCBBuffer = &xTimerTaskTCBBuffer;
+ 119              		.loc 1 102 1 is_stmt 1 view -0
+ 120              		.cfi_startproc
+ 121              		@ args = 0, pretend = 0, frame = 0
+ 122              		@ frame_needed = 0, uses_anonymous_args = 0
+ 123              		@ link register save eliminated.
+ 103:Src/freertos.c ****   *ppxTimerTaskStackBuffer = &xTimerStack[0];
+ 124              		.loc 1 103 3 view .LVU16
+ 103:Src/freertos.c ****   *ppxTimerTaskStackBuffer = &xTimerStack[0];
+ 125              		.loc 1 103 26 is_stmt 0 view .LVU17
+ 126 0000 034B     		ldr	r3, .L9
+ 127 0002 0360     		str	r3, [r0]
+ 104:Src/freertos.c ****   *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
+ 128              		.loc 1 104 3 is_stmt 1 view .LVU18
+ 104:Src/freertos.c ****   *pulTimerTaskStackSize = configTIMER_TASK_STACK_DEPTH;
+ 129              		.loc 1 104 28 is_stmt 0 view .LVU19
+ 130 0004 034B     		ldr	r3, .L9+4
+ 131 0006 0B60     		str	r3, [r1]
+ 105:Src/freertos.c ****   /* place for user code */
+ 132              		.loc 1 105 3 is_stmt 1 view .LVU20
+ 105:Src/freertos.c ****   /* place for user code */
+ 133              		.loc 1 105 26 is_stmt 0 view .LVU21
+ 134 0008 8023     		movs	r3, #128
+ 135 000a 1360     		str	r3, [r2]
+ 107:Src/freertos.c **** /* USER CODE END GET_TIMER_TASK_MEMORY */
+ 136              		.loc 1 107 1 view .LVU22
+ 137 000c 7047     		bx	lr
+ 138              	.L10:
+ 139 000e 00BF     		.align	2
+ 140              	.L9:
+ 141 0010 00000000 		.word	xTimerTaskTCBBuffer
+ 142 0014 00000000 		.word	xTimerStack
+ 143              		.cfi_endproc
+ 144              	.LFE137:
+ 146              		.section	.text.MX_FREERTOS_Init,"ax",%progbits
+ 147              		.align	1
+ 148              		.global	MX_FREERTOS_Init
+ 149              		.syntax unified
+ 150              		.thumb
+ 151              		.thumb_func
+ 153              	MX_FREERTOS_Init:
+ 154              	.LFB138:
+ 115:Src/freertos.c ****   /* USER CODE BEGIN Init */
+ 155              		.loc 1 115 29 is_stmt 1 view -0
+ 156              		.cfi_startproc
+ 157              		@ args = 0, pretend = 0, frame = 72
+ 158              		@ frame_needed = 0, uses_anonymous_args = 0
+ 159 0000 10B5     		push	{r4, lr}
+ 160              	.LCFI1:
+ 161              		.cfi_def_cfa_offset 8
+ 162              		.cfi_offset 4, -8
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 7
+
+
+ 163              		.cfi_offset 14, -4
+ 164 0002 92B0     		sub	sp, sp, #72
+ 165              	.LCFI2:
+ 166              		.cfi_def_cfa_offset 80
+ 134:Src/freertos.c ****   printQueueHandle = osMessageCreate(osMessageQ(printQueue), NULL);
+ 167              		.loc 1 134 3 view .LVU24
+ 168 0004 184C     		ldr	r4, .L13
+ 169 0006 0DF1380C 		add	ip, sp, #56
+ 170 000a 94E80F00 		ldm	r4, {r0, r1, r2, r3}
+ 171 000e 8CE80F00 		stm	ip, {r0, r1, r2, r3}
+ 135:Src/freertos.c **** 
+ 172              		.loc 1 135 3 view .LVU25
+ 135:Src/freertos.c **** 
+ 173              		.loc 1 135 22 is_stmt 0 view .LVU26
+ 174 0012 0021     		movs	r1, #0
+ 175 0014 6046     		mov	r0, ip
+ 176 0016 FFF7FEFF 		bl	osMessageCreate
+ 177              	.LVL6:
+ 135:Src/freertos.c **** 
+ 178              		.loc 1 135 20 view .LVU27
+ 179 001a 144B     		ldr	r3, .L13+4
+ 180 001c 1860     		str	r0, [r3]
+ 143:Src/freertos.c ****   mainTaskNameHandle = osThreadCreate(osThread(mainTaskName), NULL);
+ 181              		.loc 1 143 3 is_stmt 1 view .LVU28
+ 182 001e 0DF11C0C 		add	ip, sp, #28
+ 183 0022 04F1100E 		add	lr, r4, #16
+ 184 0026 BEE80F00 		ldmia	lr!, {r0, r1, r2, r3}
+ 185 002a ACE80F00 		stmia	ip!, {r0, r1, r2, r3}
+ 186 002e 9EE80700 		ldm	lr, {r0, r1, r2}
+ 187 0032 8CE80700 		stm	ip, {r0, r1, r2}
+ 144:Src/freertos.c **** 
+ 188              		.loc 1 144 3 view .LVU29
+ 144:Src/freertos.c **** 
+ 189              		.loc 1 144 24 is_stmt 0 view .LVU30
+ 190 0036 0021     		movs	r1, #0
+ 191 0038 07A8     		add	r0, sp, #28
+ 192 003a FFF7FEFF 		bl	osThreadCreate
+ 193              	.LVL7:
+ 144:Src/freertos.c **** 
+ 194              		.loc 1 144 22 view .LVU31
+ 195 003e 0C4B     		ldr	r3, .L13+8
+ 196 0040 1860     		str	r0, [r3]
+ 147:Src/freertos.c ****   printTaskNameHandle = osThreadCreate(osThread(printTaskName), NULL);
+ 197              		.loc 1 147 3 is_stmt 1 view .LVU32
+ 198 0042 EE46     		mov	lr, sp
+ 199 0044 04F12C0C 		add	ip, r4, #44
+ 200 0048 BCE80F00 		ldmia	ip!, {r0, r1, r2, r3}
+ 201 004c AEE80F00 		stmia	lr!, {r0, r1, r2, r3}
+ 202 0050 9CE80700 		ldm	ip, {r0, r1, r2}
+ 203 0054 8EE80700 		stm	lr, {r0, r1, r2}
+ 148:Src/freertos.c **** 
+ 204              		.loc 1 148 3 view .LVU33
+ 148:Src/freertos.c **** 
+ 205              		.loc 1 148 25 is_stmt 0 view .LVU34
+ 206 0058 0021     		movs	r1, #0
+ 207 005a 6846     		mov	r0, sp
+ 208 005c FFF7FEFF 		bl	osThreadCreate
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 8
+
+
+ 209              	.LVL8:
+ 148:Src/freertos.c **** 
+ 210              		.loc 1 148 23 view .LVU35
+ 211 0060 044B     		ldr	r3, .L13+12
+ 212 0062 1860     		str	r0, [r3]
+ 154:Src/freertos.c **** 
+ 213              		.loc 1 154 1 view .LVU36
+ 214 0064 12B0     		add	sp, sp, #72
+ 215              	.LCFI3:
+ 216              		.cfi_def_cfa_offset 8
+ 217              		@ sp needed
+ 218 0066 10BD     		pop	{r4, pc}
+ 219              	.L14:
+ 220              		.align	2
+ 221              	.L13:
+ 222 0068 00000000 		.word	.LANCHOR0
+ 223 006c 00000000 		.word	printQueueHandle
+ 224 0070 00000000 		.word	mainTaskNameHandle
+ 225 0074 00000000 		.word	printTaskNameHandle
+ 226              		.cfi_endproc
+ 227              	.LFE138:
+ 229              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 230              		.align	2
+ 231              	.LC3:
+ 232 0000 7072696E 		.ascii	"printTaskName\000"
+ 232      74546173 
+ 232      6B4E616D 
+ 232      6500
+ 233 000e 0000     		.align	2
+ 234              	.LC1:
+ 235 0010 6D61696E 		.ascii	"mainTaskName\000"
+ 235      5461736B 
+ 235      4E616D65 
+ 235      00
+ 236              		.section	.bss.xTimerStack,"aw",%nobits
+ 237              		.align	2
+ 240              	xTimerStack:
+ 241 0000 00000000 		.space	512
+ 241      00000000 
+ 241      00000000 
+ 241      00000000 
+ 241      00000000 
+ 242              		.section	.bss.xTimerTaskTCBBuffer,"aw",%nobits
+ 243              		.align	2
+ 246              	xTimerTaskTCBBuffer:
+ 247 0000 00000000 		.space	84
+ 247      00000000 
+ 247      00000000 
+ 247      00000000 
+ 247      00000000 
+ 248              		.section	.bss.xIdleStack,"aw",%nobits
+ 249              		.align	2
+ 252              	xIdleStack:
+ 253 0000 00000000 		.space	512
+ 253      00000000 
+ 253      00000000 
+ 253      00000000 
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 9
+
+
+ 253      00000000 
+ 254              		.section	.bss.xIdleTaskTCBBuffer,"aw",%nobits
+ 255              		.align	2
+ 258              	xIdleTaskTCBBuffer:
+ 259 0000 00000000 		.space	84
+ 259      00000000 
+ 259      00000000 
+ 259      00000000 
+ 259      00000000 
+ 260              		.global	printQueueControlBlock
+ 261              		.section	.bss.printQueueControlBlock,"aw",%nobits
+ 262              		.align	2
+ 265              	printQueueControlBlock:
+ 266 0000 00000000 		.space	72
+ 266      00000000 
+ 266      00000000 
+ 266      00000000 
+ 266      00000000 
+ 267              		.global	printQueueBuffer
+ 268              		.section	.bss.printQueueBuffer,"aw",%nobits
+ 269              		.align	2
+ 272              	printQueueBuffer:
+ 273 0000 00000000 		.space	100
+ 273      00000000 
+ 273      00000000 
+ 273      00000000 
+ 273      00000000 
+ 274              		.global	printQueueHandle
+ 275              		.section	.bss.printQueueHandle,"aw",%nobits
+ 276              		.align	2
+ 279              	printQueueHandle:
+ 280 0000 00000000 		.space	4
+ 281              		.global	printTaskNameHandle
+ 282              		.section	.bss.printTaskNameHandle,"aw",%nobits
+ 283              		.align	2
+ 286              	printTaskNameHandle:
+ 287 0000 00000000 		.space	4
+ 288              		.global	mainTaskNameHandle
+ 289              		.section	.bss.mainTaskNameHandle,"aw",%nobits
+ 290              		.align	2
+ 293              	mainTaskNameHandle:
+ 294 0000 00000000 		.space	4
+ 295              		.section	.rodata
+ 296              		.align	2
+ 297              		.set	.LANCHOR0,. + 0
+ 298              	.LC5:
+ 299 0000 64000000 		.word	100
+ 300 0004 01000000 		.word	1
+ 301 0008 00000000 		.word	printQueueBuffer
+ 302 000c 00000000 		.word	printQueueControlBlock
+ 303              	.LC6:
+ 304 0010 10000000 		.word	.LC1
+ 305 0014 00000000 		.word	mainTask
+ 306 0018 0200     		.short	2
+ 307 001a 0000     		.space	2
+ 308 001c 00000000 		.word	0
+ 309 0020 00020000 		.word	512
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 10
+
+
+ 310 0024 00000000 		.word	0
+ 311 0028 00000000 		.word	0
+ 312              	.LC7:
+ 313 002c 00000000 		.word	.LC3
+ 314 0030 00000000 		.word	printTask
+ 315 0034 FEFF     		.short	-2
+ 316 0036 0000     		.space	2
+ 317 0038 00000000 		.word	0
+ 318 003c 80000000 		.word	128
+ 319 0040 00000000 		.word	0
+ 320 0044 00000000 		.word	0
+ 321              		.text
+ 322              	.Letext0:
+ 323              		.file 2 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+ 324              		.file 3 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ 325              		.file 4 "Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/portmacro.h"
+ 326              		.file 5 "Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h"
+ 327              		.file 6 "Middlewares/Third_Party/FreeRTOS/Source/include/task.h"
+ 328              		.file 7 "Middlewares/Third_Party/FreeRTOS/Source/include/queue.h"
+ 329              		.file 8 "Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.h"
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s 			page 11
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 freertos.c
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:21     .text.mainTask:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:27     .text.mainTask:0000000000000000 mainTask
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:53     .text.vApplicationStackOverflowHook:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:59     .text.vApplicationStackOverflowHook:0000000000000000 vApplicationStackOverflowHook
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:73     .text.vApplicationGetIdleTaskMemory:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:79     .text.vApplicationGetIdleTaskMemory:0000000000000000 vApplicationGetIdleTaskMemory
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:104    .text.vApplicationGetIdleTaskMemory:0000000000000010 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:258    .bss.xIdleTaskTCBBuffer:0000000000000000 xIdleTaskTCBBuffer
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:252    .bss.xIdleStack:0000000000000000 xIdleStack
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:110    .text.vApplicationGetTimerTaskMemory:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:116    .text.vApplicationGetTimerTaskMemory:0000000000000000 vApplicationGetTimerTaskMemory
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:141    .text.vApplicationGetTimerTaskMemory:0000000000000010 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:246    .bss.xTimerTaskTCBBuffer:0000000000000000 xTimerTaskTCBBuffer
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:240    .bss.xTimerStack:0000000000000000 xTimerStack
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:147    .text.MX_FREERTOS_Init:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:153    .text.MX_FREERTOS_Init:0000000000000000 MX_FREERTOS_Init
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:222    .text.MX_FREERTOS_Init:0000000000000068 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:279    .bss.printQueueHandle:0000000000000000 printQueueHandle
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:293    .bss.mainTaskNameHandle:0000000000000000 mainTaskNameHandle
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:286    .bss.printTaskNameHandle:0000000000000000 printTaskNameHandle
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:230    .rodata.str1.4:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:237    .bss.xTimerStack:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:243    .bss.xTimerTaskTCBBuffer:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:249    .bss.xIdleStack:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:255    .bss.xIdleTaskTCBBuffer:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:265    .bss.printQueueControlBlock:0000000000000000 printQueueControlBlock
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:262    .bss.printQueueControlBlock:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:272    .bss.printQueueBuffer:0000000000000000 printQueueBuffer
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:269    .bss.printQueueBuffer:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:276    .bss.printQueueHandle:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:283    .bss.printTaskNameHandle:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:290    .bss.mainTaskNameHandle:0000000000000000 $d
+C:\Users\argaj\AppData\Local\Temp\ccrR4iTE.s:296    .rodata:0000000000000000 $d
+
+UNDEFINED SYMBOLS
+osDelay
+osMessageCreate
+osThreadCreate
+printTask

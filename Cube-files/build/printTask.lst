@@ -1,0 +1,82 @@
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccDFRSua.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"printTask.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "../Src/printTask.c"
+  20              		.section	.text.printTask,"ax",%progbits
+  21              		.align	1
+  22              		.global	printTask
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	printTask:
+  28              	.LFB5:
+   1:../Src/printTask.c **** #include "FreeRTOS.h"
+   2:../Src/printTask.c **** #include "task.h"
+   3:../Src/printTask.c **** 
+   4:../Src/printTask.c **** void printTask(void *pvParameters){
+  29              		.loc 1 4 35 view -0
+  30              		.cfi_startproc
+  31              		@ Volatile: function does not return.
+  32              		@ args = 0, pretend = 0, frame = 0
+  33              		@ frame_needed = 0, uses_anonymous_args = 0
+  34              		@ link register save eliminated.
+  35              	.LVL0:
+  36              	.L2:
+   5:../Src/printTask.c ****     while (1){
+  37              		.loc 1 5 5 discriminator 1 view .LVU1
+   6:../Src/printTask.c ****         taskYIELD();
+  38              		.loc 1 6 9 discriminator 1 view .LVU2
+  39 0000 4FF0E023 		mov	r3, #-536813568
+  40 0004 4FF08052 		mov	r2, #268435456
+  41 0008 C3F8042D 		str	r2, [r3, #3332]
+  42              		.loc 1 6 9 discriminator 1 view .LVU3
+  43              		.syntax unified
+  44              	@ 6 "../Src/printTask.c" 1
+  45 000c BFF34F8F 		dsb
+  46              	@ 0 "" 2
+  47              		.loc 1 6 9 discriminator 1 view .LVU4
+  48              	@ 6 "../Src/printTask.c" 1
+  49 0010 BFF36F8F 		isb
+  50              	@ 0 "" 2
+  51              		.loc 1 6 20 discriminator 1 view .LVU5
+   5:../Src/printTask.c ****     while (1){
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccDFRSua.s 			page 2
+
+
+  52              		.loc 1 5 11 discriminator 1 view .LVU6
+  53              		.thumb
+  54              		.syntax unified
+  55 0014 F4E7     		b	.L2
+  56              		.cfi_endproc
+  57              	.LFE5:
+  59              		.text
+  60              	.Letext0:
+  61              		.file 2 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\machine\\_default_types.h"
+  62              		.file 3 "d:\\programming\\mysys64\\mingw64\\arm-none-eabi\\include\\sys\\_stdint.h"
+ARM GAS  C:\Users\argaj\AppData\Local\Temp\ccDFRSua.s 			page 3
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 printTask.c
+C:\Users\argaj\AppData\Local\Temp\ccDFRSua.s:21     .text.printTask:0000000000000000 $t
+C:\Users\argaj\AppData\Local\Temp\ccDFRSua.s:27     .text.printTask:0000000000000000 printTask
+
+NO UNDEFINED SYMBOLS
