@@ -5,17 +5,17 @@
 #include "main.h"
 #include "debug.h"
 #include "bsp.h"
+#include "sensors.h"
 
 
 void mainTask(void *pvParameters){
     uprintf("Starting up\n");
-    uint32_t adcVals[6];
-    HAL_ADC_Start_DMA(&ADC_HANDLE, adcVals, 6);
+    sensors_t *sensors = getSensors_Handle();
     while (1){
-        // read adc values
-        uprintf("ADC values: %lu, %lu, %lu, %lu, %lu, %lu\n", adcVals[0], adcVals[1], adcVals[2], adcVals[3], adcVals[4], adcVals[5]);
-        // blink led
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        vTaskDelay(20);
+        // print adc values
+
+        uprintf("IR: %lu %lu %lu %lu %lu %lu\n", sensors->ir1, sensors->ir2, sensors->ir3, sensors->ir4, sensors->ir5, sensors->dist);
+        // HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        // vTaskDelay(20);
     }
 }
