@@ -4,12 +4,12 @@
 #include "stm32f4xx_hal.h"
 
 typedef struct sensors_t {
-    uint32_t ir1;
-    uint32_t ir2;
-    uint32_t ir3;
-    uint32_t ir4;
-    uint32_t ir5;
-    uint32_t dist;
+    double ir1;
+    double ir2;
+    double ir3;
+    double ir4;
+    double ir5;
+    double dist;
 } sensors_t;
 
 HAL_StatusTypeDef sensorsInit(void);

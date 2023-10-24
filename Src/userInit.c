@@ -6,8 +6,10 @@ void userInit(void) {
     if (debugInit() != HAL_OK) {
         Error_Handler();
     }
-
+    
     if (sensorsInit() != HAL_OK) {
         Error_Handler();
     }
+
+    // printf("Finished User Init\n");
 }
