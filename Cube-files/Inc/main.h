@@ -63,6 +63,10 @@ void Error_Handler(void);
 #define DIST_IR_GPIO_Port GPIOC
 #define IR5_Pin GPIO_PIN_1
 #define IR5_GPIO_Port GPIOC
+#define IMU_MISO_Pin GPIO_PIN_2
+#define IMU_MISO_GPIO_Port GPIOC
+#define IMU_MOSI_Pin GPIO_PIN_3
+#define IMU_MOSI_GPIO_Port GPIOC
 #define IR1_Pin GPIO_PIN_0
 #define IR1_GPIO_Port GPIOA
 #define IR2_Pin GPIO_PIN_1
@@ -77,6 +81,10 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define IR4_Pin GPIO_PIN_0
 #define IR4_GPIO_Port GPIOB
+#define IMU_SCK_Pin GPIO_PIN_10
+#define IMU_SCK_GPIO_Port GPIOB
+#define IMU_CS_Pin GPIO_PIN_12
+#define IMU_CS_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
