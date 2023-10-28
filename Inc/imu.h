@@ -5,7 +5,7 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
-#include "ICM20948_register.h"
+#include "ICM20948_register.hpp"
 
 HAL_StatusTypeDef ICM_SelectBank(UserBankSel_E bank);
 HAL_StatusTypeDef ICM_GetBank(UserBankSel_E userBank);
@@ -14,7 +14,7 @@ HAL_StatusTypeDef ICM_SetClock(ClockSel_E clockSel);
 HAL_StatusTypeDef ICM_AccelGyroOff(void);
 HAL_StatusTypeDef ICM_AccelGyroOn(void);
 HAL_StatusTypeDef ICM_WhoAmI(uint8_t* whoami);
-HAL_StatusTypeDef ICM_SetGyroRateLPF(GyroRate_E gyroRate, GyroLPF_E gyroLPF);
+HAL_StatusTypeDef ICM_SetGyroDPSAndLPF(GyroDPS_E gyroRate, GyroLPF_E gyroLPF);
 HAL_StatusTypeDef ICM_SetGyroSampleRate(float gyroSampleRate);
 HAL_StatusTypeDef ICMInit();
 HAL_StatusTypeDef ICM_AccelGyroInit();

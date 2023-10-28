@@ -54,19 +54,16 @@ HAL_StatusTypeDef resetUART() {
     return HAL_OK;
 }
 
-void _handleError(char *file, int line, uint32_t *callerAddr) {
+void _handleError(char *file, int line) {
     const char errorStringFile[] = "Error!: File ";
     const char errorStringLine[] = " line ";
-    const char errorStringCallerAddr[] = " Caller addr: ";
     char lineNumberString[10];
-    char callerAddrString[12];
 
     const int BACKTRACE_SIZE = 3;
     backtrace_t backtrace[BACKTRACE_SIZE];
-    backtrace_unwind(&backtrace, BACKTRACE_SIZE);
+    backtrace_unwind(backtrace, BACKTRACE_SIZE);
     char backtraceString[20];
     
-
     taskDISABLE_INTERRUPTS();
 
     while (resetUART() != HAL_OK)
@@ -77,12 +74,9 @@ void _handleError(char *file, int line, uint32_t *callerAddr) {
     HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)errorStringLine), strlen(errorStringLine), 1000);
     snprintf(lineNumberString, sizeof(lineNumberString), "%d", line);
     HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)lineNumberString), strlen(lineNumberString), 1000);
-    HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)errorStringCallerAddr), strlen(errorStringCallerAddr), 1000);
-    snprintf(callerAddrString, sizeof(callerAddrString), "%08p\n", callerAddr);
-    HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)callerAddrString), strlen(callerAddrString), 1000);
 
     for (int i = 0; i < BACKTRACE_SIZE; ++i){
-		sprintf(backtraceString, "%p - %s@%p\n", backtrace[i].function, backtrace[i].name, backtrace[i].address);
+		sprintf(backtraceString, "\n%p - %s@%p", backtrace[i].function, backtrace[i].name, backtrace[i].address);
         HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)backtraceString), strlen(backtraceString), 1000);
     }
 

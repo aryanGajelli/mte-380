@@ -37,5 +37,5 @@ HAL_StatusTypeDef debugInit(void);
         xQueueSendFromISR(printQueue, buf, NULL);            \
     } while (0)
 
-void _handleError(char *file, int line, uint32_t* callerAddr);
+void _handleError(char *file, int line);
 #endif  // __DEBUG_H__

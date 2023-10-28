@@ -5,7 +5,7 @@
 #include "stm32f4xx_hal.h"
 
 #define READ_EN(reg) ((reg) |= 0x80)
-#define WRITE_EN(reg) ((reg) &= 0x7F)
+#define WRITE_EN(reg) ((reg) &= ~0x80)
 
 #define IMU_CS_EN() HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET)
 #define IMU_CS_DIS() HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET)

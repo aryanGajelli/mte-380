@@ -45,15 +45,6 @@ HAL_StatusTypeDef sensorsInit(void) {
     return HAL_ADC_Start_DMA(&ADC_HANDLE, adcBuf, 6);
 }
 
-
-// void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-//     if (hadc->Instance != ADC1 || !ADC_CALIBRATED) {
-//         return;
-//     }
-//     ADC_Complete = true;
-
-// }
-
 sensors_t* getSensors_Handle(void) {
     return &sensors;
 }

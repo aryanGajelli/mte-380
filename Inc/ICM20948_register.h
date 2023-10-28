@@ -32,12 +32,12 @@ typedef enum ClockSel_E {
     CLK_STOP = 7
 } ClockSel_E;
 
-typedef enum GyroRate_E {
-    GYRO_RATE_250 = 0,
-    GYRO_RATE_500 = 1,
-    GYRO_RATE_1000 = 2,
-    GYRO_RATE_2000 = 3
-} GyroRate_E;
+typedef enum GyroDPS_E {
+    GYRO_DPS_250 = 0,
+    GYRO_DPS_500 = 1,
+    GYRO_DPS_1000 = 2,
+    GYRO_DPS_2000 = 3
+} GyroDPS_E;
 
 typedef enum GyroLPF_E {
     GYRO_LPF_12316HZ = 0,

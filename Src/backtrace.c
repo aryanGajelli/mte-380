@@ -376,7 +376,7 @@ int _backtrace_unwind(backtrace_t *buffer, int size, backtrace_frame_t *frame)
 		/* Next backtrace frame */
 		++count;
 
-	} while (unwind_frame(frame) && count < size);
+	} while (unwind_frame(frame) > 0 && count < size);
 
 	/* All done */
 	return count;

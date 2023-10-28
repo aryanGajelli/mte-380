@@ -199,7 +199,7 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   // __disable_irq();
 
-  _handleError(__FILE__, __LINE__, NULL);
+  _handleError(__FILE__, __LINE__);
   
   while (1)
   {
