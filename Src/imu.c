@@ -10,7 +10,7 @@ UserBankSel_E expected_CurrUserBank = USER_BANK_ERROR;
 HAL_StatusTypeDef ICMInit() {
     uint8_t data;
     // user bank 0 contains critical configuration registers
-    ICM_SelectBank(USER_BANK_0);
+    if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
     // check who am i register
     if (ICM_WhoAmI(&data) != HAL_OK) return HAL_ERROR;
     if (data != WHO_AM_I_RESET_VAL) {
@@ -20,12 +20,32 @@ HAL_StatusTypeDef ICMInit() {
 
     if (ICM_DisableI2C() != HAL_OK) return HAL_ERROR;
     if (ICM_SetClock(CLK_BEST_AVAIL) != HAL_OK) return HAL_ERROR;
-    if (ICM_AccelGyroOff() != HAL_OK) return HAL_ERROR;
-    if (ICM_AccelGyroOn() != HAL_OK) return HAL_ERROR;
+
+    if (ICM_AccelGyroInit() != HAL_OK) return HAL_ERROR;
+    
     return HAL_OK;
 }
 
+HAL_StatusTypeDef ICM_AccelGyroInit() {
+    if (ICM_AccelGyroOff() != HAL_OK) return HAL_ERROR;
+    if (ICM_AccelGyroOn() != HAL_OK) return HAL_ERROR;
 
+    if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroRateLPF(GYRO_RATE_250, GYRO_LPF_17HZ) != HAL_OK) return HAL_ERROR;
+
+    if (ICM_SetGyroSampleRate(100) != HAL_OK) return HAL_ERROR;
+
+    // Set accelerometer low pass filter to 136hz (0x11) and the rate to 8G (0x04) in register ACCEL_CONFIG (0x14)
+    ICM_WriteOneByte(0x14, (0x04 | 0x11));
+
+    // Set accelerometer sample rate to 225hz (0x00) in ACCEL_SMPLRT_DIV_1 register (0x10)
+    ICM_WriteOneByte(0x10, 0x00);
+    HAL_Delay(10);
+
+    // Set accelerometer sample rate to 100 hz (0x0A) in ACCEL_SMPLRT_DIV_2 register (0x11)
+    ICM_WriteOneByte(0x11, 0x0A);
+    return HAL_OK;
+}
 
 HAL_StatusTypeDef ICM_SelectBank(UserBankSel_E userBank) {
     if (userBank > USER_BANK_3) {
@@ -89,4 +109,25 @@ HAL_StatusTypeDef ICM_WhoAmI(uint8_t *whoami) {
         return HAL_ERROR;
     }
     return ICM_ReadOneByte(WHO_AM_I_REG, whoami);
+}
+
+HAL_StatusTypeDef ICM_SetGyroRateLPF(GyroRate_E gyroRate, GyroLPF_E gyroLPF) {
+    if (expected_CurrUserBank != USER_BANK_2) {
+        return HAL_ERROR;
+    }
+    return ICM_WriteOneByte(GYRO_CONFIG_1_REG, (gyroRate << 1) | gyroLPF);
+}
+
+// sample rate in Hz
+HAL_StatusTypeDef ICM_SetGyroSampleRate(float gyroSampleRate) {
+    if (expected_CurrUserBank != USER_BANK_2) {
+        return HAL_ERROR;
+    }
+
+    if (gyroSampleRate < 4.3 || gyroSampleRate > 1100) {
+        return HAL_ERROR;
+    }
+    // formula for gyro sample rate: sample rate = 1.1kHz/(1+GYRO_SMPLRT_DIV[7:0])
+    // reverse compute the value for GYRO_SMPLRT_DIV[7:0]
+    return ICM_WriteOneByte(GYRO_SMPLRT_DIV_REG, (uint8_t)(1100 / gyroSampleRate - 1));
 }
