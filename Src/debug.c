@@ -34,7 +34,7 @@ void printTask(void *pvParameters) {
         if (HAL_UART_GetState(&DEBUG_UART_HANDLE) == HAL_UART_STATE_READY && xQueueReceive(printQueue, (uint8_t *)buffer, portMAX_DELAY) == pdTRUE) {
             size_t len = strlen(buffer);
             buffer[PRINT_QUEUE_STRING_SIZE] = '\0';
-            HAL_UART_Transmit(&DEBUG_UART_HANDLE, (uint8_t *)buffer, len, UART_PRINT_TIMEOUT);
+            HAL_UART_Transmit_DMA(&DEBUG_UART_HANDLE, (uint8_t *)buffer, len);
         }
     }
 }
