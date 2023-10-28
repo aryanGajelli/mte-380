@@ -8,7 +8,11 @@
 #include "ICM20948_register.h"
 
 HAL_StatusTypeDef ICM_SelectBank(UserBankSel_E bank);
-uint8_t ICM_GetBank();
-void ICM_DisableI2C();
+HAL_StatusTypeDef ICM_GetBank(UserBankSel_E userBank);
+HAL_StatusTypeDef ICM_DisableI2C();
+HAL_StatusTypeDef ICM_SetClock(ClockSel_E clockSel);
+HAL_StatusTypeDef ICM_AccelGyroOff(void);
+HAL_StatusTypeDef ICM_AccelGyroOn(void);
+HAL_StatusTypeDef ICM_WhoAmI(uint8_t* whoami);
 HAL_StatusTypeDef ICMInit();
 #endif  // __IMU_H__

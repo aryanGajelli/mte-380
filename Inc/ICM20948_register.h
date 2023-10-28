@@ -5,8 +5,8 @@
 #define WHO_AM_I_REG 0x00
 #define WHO_AM_I_RESET_VAL 0xEA
 #define USER_CTRL_REG 0x03
-#define USER_CTRL_RESET_VAL 0x00
 #define PWR_MGMT_1_REG 0x06
+#define PWR_MGMT_2_REG 0x07
 #define USER_BANK_SEL_REG 0x7F
 #define ACCEL_XOUT_H_REG 0x2D
 #define ACCEL_XOUT_L_REG 0x2E
@@ -16,7 +16,8 @@ typedef enum UserBankSel_E {
     USER_BANK_0 = 0,
     USER_BANK_1 = 1,
     USER_BANK_2 = 2,
-    USER_BANK_3 = 3
+    USER_BANK_3 = 3,
+    USER_BANK_ERROR = 0xff
 } UserBankSel_E;
 
 // clock selctions
