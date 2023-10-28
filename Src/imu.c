@@ -22,28 +22,23 @@ HAL_StatusTypeDef ICMInit() {
     if (ICM_SetClock(CLK_BEST_AVAIL) != HAL_OK) return HAL_ERROR;
 
     if (ICM_AccelGyroInit() != HAL_OK) return HAL_ERROR;
-    
+
     return HAL_OK;
 }
 
 HAL_StatusTypeDef ICM_AccelGyroInit() {
+    if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
     if (ICM_AccelGyroOff() != HAL_OK) return HAL_ERROR;
     if (ICM_AccelGyroOn() != HAL_OK) return HAL_ERROR;
 
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
-    if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_17HZ) != HAL_OK) return HAL_ERROR;
 
+    if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_12316HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetGyroSampleRate(100) != HAL_OK) return HAL_ERROR;
 
-    // // Set accelerometer low pass filter to 136hz (0x11) and the rate to 8G (0x04) in register ACCEL_CONFIG (0x14)
-    // ICM_WriteOneByte(0x14, (0x04 | 0x11));
-
-    // // Set accelerometer sample rate to 225hz (0x00) in ACCEL_SMPLRT_DIV_1 register (0x10)
-    // ICM_WriteOneByte(0x10, 0x00);
-    // HAL_Delay(10);
-
-    // // Set accelerometer sample rate to 100 hz (0x0A) in ACCEL_SMPLRT_DIV_2 register (0x11)
-    // ICM_WriteOneByte(0x11, 0x0A);
+    if (ICM_SetAccelScaleAndLPF(ACCEL_SCALE_2G, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetAccelSampleRate(100) != HAL_OK) return HAL_ERROR;
+    HAL_Delay(50);
     return HAL_OK;
 }
 
@@ -75,10 +70,11 @@ HAL_StatusTypeDef ICM_DisableI2C() {
     if (expected_CurrUserBank != USER_BANK_0) {
         return HAL_ERROR;
     }
-    static const uint8_t FIFO_EN = 0x40,
+    static const uint8_t DMP_EN = 0x80,
+                         FIFO_EN = 0x40,
                          I2C_IF_DIS = 0x10,
                          DMP_RST = 0x08;
-    return ICM_WriteOneByte(USER_CTRL_REG, FIFO_EN | I2C_IF_DIS | DMP_RST);
+    return ICM_WriteOneByte(USER_CTRL_REG, DMP_EN | FIFO_EN | I2C_IF_DIS | DMP_RST);
 }
 
 HAL_StatusTypeDef ICM_SetClock(ClockSel_E clockSel) {
@@ -115,7 +111,7 @@ HAL_StatusTypeDef ICM_WhoAmI(uint8_t *whoami) {
  * @brief Set the Gyro Degrees Per Second and Low Pass Filter Frequency for ICM20948
  * @param gyroDPS: Gyro Degrees Per Second
  * @param gyroLPF: Gyro Low Pass Filter Frequency
-*/
+ */
 HAL_StatusTypeDef ICM_SetGyroDPSAndLPF(GyroDPS_E gyroDPS, GyroLPF_E gyroLPF) {
     if (expected_CurrUserBank != USER_BANK_2) {
         return HAL_ERROR;
@@ -126,7 +122,7 @@ HAL_StatusTypeDef ICM_SetGyroDPSAndLPF(GyroDPS_E gyroDPS, GyroLPF_E gyroLPF) {
 /**
  * @brief Set the Gyro Sample Rate ICM20948
  * @param gyroSampleRate: sample rate in Hz
-*/
+ */
 HAL_StatusTypeDef ICM_SetGyroSampleRate(float gyroSampleRate) {
     if (expected_CurrUserBank != USER_BANK_2) {
         return HAL_ERROR;
@@ -138,4 +134,69 @@ HAL_StatusTypeDef ICM_SetGyroSampleRate(float gyroSampleRate) {
     // formula for gyro sample rate: sample rate = 1.1kHz/(1+GYRO_SMPLRT_DIV[7:0])
     // reverse compute the value for GYRO_SMPLRT_DIV[7:0]
     return ICM_WriteOneByte(GYRO_SMPLRT_DIV_REG, (uint8_t)(1100 / gyroSampleRate - 1));
+}
+
+/**
+ * @brief Set the Accel Scale and Low Pass Filter ICM20948
+ * @param accelScale: Accelerometer scale in g
+ * @param accelLPF: Accelerometer Low Pass Filter Frequency
+ */
+HAL_StatusTypeDef ICM_SetAccelScaleAndLPF(AccelScale_E accelScale, AccelLPF_E accelLPF) {
+    if (expected_CurrUserBank != USER_BANK_2) {
+        return HAL_ERROR;
+    }
+    return ICM_WriteOneByte(ACCEL_CONFIG_REG, (accelScale << 1) | accelLPF);
+}
+
+/**
+ * @brief Set the Accel Sample Rate ICM20948
+ * @param accelSampleRate: sample rate in Hz
+ */
+HAL_StatusTypeDef ICM_SetAccelSampleRate(float accelSampleRate) {
+    if (expected_CurrUserBank != USER_BANK_2) {
+        return HAL_ERROR;
+    }
+
+    if (accelSampleRate < 1125. / (4095 + 1) || accelSampleRate > 1125) {
+        return HAL_ERROR;
+    }
+    // formula for accel sample rate: sample rate = 1.125kHz/(1+ACCEL_SMPLRT_DIV[11:0])
+    // reverse compute the value for ACCEL_SMPLRT_DIV[11:0]
+    uint16_t accelSampleRateDiv = (uint16_t)(1125 / accelSampleRate - 1) & 0xfff;
+    if (ICM_WriteOneByte(ACCEL_SMPLRT_DIV_1_REG, (uint8_t)(accelSampleRateDiv >> 8)) != HAL_OK) return HAL_ERROR;
+    return ICM_WriteOneByte(ACCEL_SMPLRT_DIV_2_REG, (uint8_t)(accelSampleRateDiv & 0xff));
+}
+
+void ICM_ReadAccelGyro(void) {
+    const size_t NUM_BYTES = ACCEL_GYRO_END_REG - ACCEL_GYRO_START_REG + 1;
+    uint8_t raw_data[NUM_BYTES];
+    int16_t signed_data[NUM_BYTES / 2];
+    float accel_data[3];
+    float gyro_data[3];
+    if (expected_CurrUserBank != USER_BANK_0) {
+        ICM_SelectBank(USER_BANK_0);
+    }
+
+    ICM_ReadBytes(ACCEL_GYRO_START_REG, raw_data, NUM_BYTES);
+
+    signed_data[0] = (raw_data[0] << 8) | raw_data[1];
+    signed_data[1] = (raw_data[2] << 8) | raw_data[3];
+    signed_data[2] = (raw_data[4] << 8) | raw_data[5];
+
+    signed_data[3] = (raw_data[6] << 8) | raw_data[7];
+    signed_data[4] = (raw_data[8] << 8) | raw_data[9];
+    signed_data[5] = (raw_data[10] << 8) | raw_data[11];
+
+
+    accel_data[0] = signed_data[0] * 9.81 / -16384.0;
+    accel_data[1] = signed_data[1] * 9.81 / -16384.0;
+    accel_data[2] = signed_data[2] * 9.81 / -16384.0;
+
+    gyro_data[0] = signed_data[3] / 131;
+    gyro_data[1] = signed_data[4] / 131;
+    gyro_data[2] = signed_data[5] / 131;
+
+    // print out the data
+    uprintf("accel: %0.3f %0.3f %0.3f\t", accel_data[0], accel_data[1], accel_data[2]);
+    uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
 }

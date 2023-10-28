@@ -18,6 +18,7 @@ void mainTask(void *pvParameters){
     uprintf("passed ICM init\n");
     while (1){
         // print adc values
+        ICM_ReadAccelGyro();
         vTaskDelay(20);
     }
 }

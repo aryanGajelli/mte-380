@@ -13,8 +13,11 @@
 // user bank 2
 #define GYRO_SMPLRT_DIV_REG 0x00
 #define GYRO_CONFIG_1_REG 0x01
-#define ACCEL_XOUT_H_REG 0x2D
-#define ACCEL_XOUT_L_REG 0x2E
+#define ACCEL_SMPLRT_DIV_1_REG 0x10
+#define ACCEL_SMPLRT_DIV_2_REG 0x11
+#define ACCEL_CONFIG_REG 0x14
+#define ACCEL_GYRO_START_REG 0x2D
+#define ACCEL_GYRO_END_REG 0x38
 
 // user register banks
 typedef enum UserBankSel_E {
@@ -48,6 +51,25 @@ typedef enum GyroLPF_E {
     GYRO_LPF_36HZ = (4 << 3) | 1,
     GYRO_LPF_17HZ = (5 << 3) | 1,
     GYRO_LPF_9HZ = (6 << 3) | 1,
+    GYRO_LPF_377HZ = (7 << 3) | 1
 } GyroLPF_E;
+
+typedef enum AccelScale_E {
+    ACCEL_SCALE_2G = 0,
+    ACCEL_SCALE_4G = 1,
+    ACCEL_SCALE_8G = 2,
+    ACCEL_SCALE_16G = 3
+} AccelScale_E;
+
+typedef enum AccelLPF_E {
+    ACCEL_LPF_1248HZ = 0,
+    ACCEL_LPF_265HZ = 1,
+    ACCEL_LPF_136HZ = (2 << 3) | 1,
+    ACCEL_LPF_69HZ = (3 << 3) | 1,
+    ACCEL_LPF_34HZ = (4 << 3) | 1,
+    ACCEL_LPF_17HZ = (5 << 3) | 1,
+    ACCEL_LPF_8HZ = (6 << 3) | 1,
+    ACCEL_LPF_500HZ = (7 << 3) | 1
+} AccelLPF_E;
 
 #endif  // __ICM20948_REGISTER_H__
