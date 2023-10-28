@@ -35,7 +35,6 @@ void ADC_Calibrate(){
     VDDA = 3.3 * VREFINT_CAL / VREFINT_DATA;
     VDDA_DIV_4095 = VDDA / 4095;
     ADC_CALIBRATED = true;
-    printf("VDDA: %f\n", VDDA);
     MX_ADC1_Init();
 }
 
@@ -47,13 +46,13 @@ HAL_StatusTypeDef sensorsInit(void) {
 }
 
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-    if (hadc->Instance != ADC1 || !ADC_CALIBRATED) {
-        return;
-    }
-    ADC_Complete = true;
+// void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
+//     if (hadc->Instance != ADC1 || !ADC_CALIBRATED) {
+//         return;
+//     }
+//     ADC_Complete = true;
 
-}
+// }
 
 sensors_t* getSensors_Handle(void) {
     return &sensors;
@@ -63,18 +62,18 @@ double ADC_to_Volt(uint32_t adc_val) {
     double offset = 0.00;
     return VDDA * adc_val / 4095 + offset;
 }
-void sensorTask(void *pvParameters) {
-    while (1) {
-        if (ADC_Complete){
-            sensors.ir1 = ADC_to_Volt(adcBuf[0]);
-            sensors.ir2 = ADC_to_Volt(adcBuf[1]);
-            sensors.ir3 = ADC_to_Volt(adcBuf[2]);
-            sensors.ir4 = ADC_to_Volt(adcBuf[3]);
-            sensors.ir5 = ADC_to_Volt(adcBuf[4]);
-            sensors.dist = ADC_to_Volt(adcBuf[5]);
+// void sensorTask(void *pvParameters) {
+//     while (1) {
+//         if (ADC_Complete){
+//             sensors.ir1 = ADC_to_Volt(adcBuf[0]);
+//             sensors.ir2 = ADC_to_Volt(adcBuf[1]);
+//             sensors.ir3 = ADC_to_Volt(adcBuf[2]);
+//             sensors.ir4 = ADC_to_Volt(adcBuf[3]);
+//             sensors.ir5 = ADC_to_Volt(adcBuf[4]);
+//             sensors.dist = ADC_to_Volt(adcBuf[5]);
 
-            ADC_Complete = false;          
-        }
-        vTaskDelay(10);
-    }
-}
+//             ADC_Complete = false;          
+//         }
+//         vTaskDelay(10);
+//     }
+// }

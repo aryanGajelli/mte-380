@@ -1,23 +1,53 @@
-#include "bsp.h"
 #include "imu.h"
 
+#include "ICM20948_spi.h"
+#include "bsp.h"
+#include "debug.h"
 #include "stm32f4xx_hal.h"
 
-#define WHO_AM_I_REG 0x00
-#define READ_EN(reg) ((reg) |= 0x80)
-#define WRITE_EN(reg) ((reg))
+HAL_StatusTypeDef ICMInit() {
+    uint8_t data;
+    // user bank 0 contains critical configuration registers
+    ICM_SelectBank(USER_BANK_0);
+    // check who am i register
+    ICM_ReadOneByte(WHO_AM_I_REG, &data);
+    if (data != WHO_AM_I_RESET_VAL) {
+        uprintf("ICM20948 WHO_AM_I returned: 0x%02x\n", data);
+        return HAL_ERROR;
+    }
 
-#define HSPI_TIMEOUT 15
-uint32_t ICM_test() // ***
-{
-	uint8_t reg = WHO_AM_I_REG;
+    ICM_DisableI2C();
 
-    READ_EN(reg);
-    uint8_t data = 0;
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&IMU_SPI_HANDLE, &reg, 1, HSPI_TIMEOUT);
-    HAL_SPI_Receive(&IMU_SPI_HANDLE, &data, 1, HSPI_TIMEOUT);
-	HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
+    ICM_ReadOneByte(PWR_MGMT_1_REG, &data);
+    uprintf("PWR_MGMT_1_REG: 0x%02x\n", data);
 
-    return (uint32_t) (data);
+    ICM_SetClock(CLK_BEST_AVAIL);
+    ICM_ReadOneByte(PWR_MGMT_1_REG, &data);
+    uprintf("PWR_MGMT_1_REG: 0x%02x\n", data);
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef ICM_SelectBank(UserBankSel_E bank) {
+    if (bank > USER_BANK_3) {
+        return HAL_ERROR;
+    }
+    return ICM_WriteOneByte(USER_BANK_SEL_REG, bank << 4);
+}
+
+UserBankSel_E ICM_GetBank() {
+    uint8_t data;
+    ICM_ReadOneByte(USER_BANK_SEL_REG, &data);
+    return (UserBankSel_E)(data >> 4);
+}
+
+void ICM_DisableI2C() {
+    // disable I2C interface, enable
+#define FIFO_EN 0x40
+#define I2C_IF_DIS 0x10
+#define DMP_RST 0x08
+    ICM_WriteOneByte(USER_CTRL_REG, FIFO_EN | I2C_IF_DIS | DMP_RST);
+}
+
+void ICM_SetClock(ClockSel_E clockSel){
+    ICM_WriteOneByte(PWR_MGMT_1_REG, (uint8_t)clockSel);
 }

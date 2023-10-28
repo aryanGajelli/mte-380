@@ -11,10 +11,11 @@
 
 
 void mainTask(void *pvParameters){
-    // sensors_t *sensors = getSensors_Handle();
-    // uprintf("%ld\n",  HAL_RCC_GetSysClockFreq());
-    vTaskDelay(200);
-    uprintf("0x%lx\n",  ICM_test());
+    uprintf("mainTask\n");
+    if (ICMInit() != HAL_OK) {
+        Error_Handler();
+    }
+
     while (1){
         // print adc values
         vTaskDelay(20);

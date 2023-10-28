@@ -28,6 +28,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "userInit.h"
+#include "backtrace.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -197,10 +198,13 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   // __disable_irq();
+
+  _handleError(__FILE__, __LINE__, NULL);
+  
   while (1)
   {
     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    HAL_Delay(100);
+    HAL_Delay(50);
   }
   /* USER CODE END Error_Handler_Debug */
 }
