@@ -22,6 +22,7 @@ HAL_StatusTypeDef ICMInit() {
     if (ICM_SetClock(CLK_BEST_AVAIL) != HAL_OK) return HAL_ERROR;
 
     if (ICM_AccelGyroInit() != HAL_OK) return HAL_ERROR;
+    if (ICM_MagnetometerInit() != HAL_OK) return HAL_ERROR;
 
     return HAL_OK;
 }
@@ -33,12 +34,18 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
 
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
 
-    if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_12316HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_154HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetGyroSampleRate(100) != HAL_OK) return HAL_ERROR;
 
     if (ICM_SetAccelScaleAndLPF(ACCEL_SCALE_2G, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
-    if (ICM_SetAccelSampleRate(100) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetAccelSampleRate(225) != HAL_OK) return HAL_ERROR;
     HAL_Delay(50);
+    return HAL_OK;
+}
+
+HAL_StatusTypeDef ICM_MagnetometerInit() {
+    if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
+    
     return HAL_OK;
 }
 
@@ -167,17 +174,23 @@ HAL_StatusTypeDef ICM_SetAccelSampleRate(float accelSampleRate) {
     return ICM_WriteOneByte(ACCEL_SMPLRT_DIV_2_REG, (uint8_t)(accelSampleRateDiv & 0xff));
 }
 
-void ICM_ReadAccelGyro(void) {
+/**
+ * @brief Read the Accelerometer and Gyroscope data from ICM20948
+ * @param accel_data: pointer to array of 3 floats to store the accelerometer data
+ * @param gyro_data: pointer to array of 3 floats to store the gyroscope data
+ */
+HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     const size_t NUM_BYTES = ACCEL_GYRO_END_REG - ACCEL_GYRO_START_REG + 1;
-    uint8_t raw_data[NUM_BYTES];
+    uint8_t gotBytes[NUM_BYTES + 1];
+    uint8_t *raw_data = gotBytes + 1;
     int16_t signed_data[NUM_BYTES / 2];
     float accel_data[3];
     float gyro_data[3];
     if (expected_CurrUserBank != USER_BANK_0) {
-        ICM_SelectBank(USER_BANK_0);
+        if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
     }
 
-    ICM_ReadBytes(ACCEL_GYRO_START_REG, raw_data, NUM_BYTES);
+    if (ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, NUM_BYTES) != HAL_OK) return HAL_ERROR;
 
     signed_data[0] = (raw_data[0] << 8) | raw_data[1];
     signed_data[1] = (raw_data[2] << 8) | raw_data[3];
@@ -187,16 +200,24 @@ void ICM_ReadAccelGyro(void) {
     signed_data[4] = (raw_data[8] << 8) | raw_data[9];
     signed_data[5] = (raw_data[10] << 8) | raw_data[11];
 
+    accel->x = signed_data[0] * 9.81 / -16384.0;
+    accel->y = signed_data[1] * 9.81 / -16384.0;
+    accel->z = signed_data[2] * 9.81 / -16384.0;
 
-    accel_data[0] = signed_data[0] * 9.81 / -16384.0;
-    accel_data[1] = signed_data[1] * 9.81 / -16384.0;
-    accel_data[2] = signed_data[2] * 9.81 / -16384.0;
-
-    gyro_data[0] = signed_data[3] / 131;
-    gyro_data[1] = signed_data[4] / 131;
-    gyro_data[2] = signed_data[5] / 131;
-
+    gyro->x = signed_data[3] / 131.;
+    gyro->y = signed_data[4] / 131.;
+    gyro->z = signed_data[5] / 131.;
+ 
+    // print raw data
+    // for (int i = 0; i < NUM_BYTES; i++) {
+    //     uprintf("%02x ", raw_data[i]);
+    // }
     // print out the data
-    uprintf("accel: %0.3f %0.3f %0.3f\t", accel_data[0], accel_data[1], accel_data[2]);
-    uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
+    // uprintf("accel: %0.3f %0.3f %0.3f\t", accel_data[0], accel_data[1], accel_data[2]);
+    // uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
+    
+    // print out the data
+    // uprintf("accel: %0.3f %0.3f %0.3f\t", accel->x, accel->y, accel->z);
+    // uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro->x, gyro->y, gyro->z);
+    return HAL_OK;
 }

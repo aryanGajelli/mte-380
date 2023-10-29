@@ -7,18 +7,30 @@
 #include "bsp.h"
 #include "sensors.h"
 #include "imu.h"
+#include "mathUtils.h"
 #include <stdio.h>
 
 
 void mainTask(void *pvParameters){
     uprintf("mainTask\n");
-    if (ICMInit() != HAL_OK) {
+    uint32_t status = ICMInit();
+    if (status != HAL_OK) {
+        uprintf("ICMInit failed on line: %lu\n", status);
+        vTaskDelay(1000);
         Error_Handler();
     }
     uprintf("passed ICM init\n");
+
+    IMUData_t imuData;
+    
     while (1){
-        // print adc values
-        ICM_ReadAccelGyro();
+        if (ICM_ReadAccelGyro(&imuData.accel, &imuData.gyro) != HAL_OK) {
+            Error_Handler();
+        }
+        // print out the data
+        uprintf("accel: %0.3f %0.3f %0.3f\t", imuData.accel.x, imuData.accel.y, imuData.accel.z);
+        uprintf("gyro: %0.3f %0.3f %0.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        
         vTaskDelay(20);
     }
 }
