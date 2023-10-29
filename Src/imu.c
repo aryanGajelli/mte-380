@@ -5,6 +5,9 @@
 #include "debug.h"
 #include "stm32f4xx_hal.h"
 
+#define READ_EN 0x80
+#define WRITE_EN 0x7f
+
 UserBankSel_E expected_CurrUserBank = USER_BANK_ERROR;
 
 HAL_StatusTypeDef ICMInit() {
@@ -44,8 +47,33 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
 }
 
 HAL_StatusTypeDef ICM_MagnetometerInit() {
+    // Configure AUX_I2C Magnetometer
     if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
-    
+    // INT Pin
+    const uint8_t INT1_LATCH__EN = 0x20,
+                  INT_ANYRD_2CLEAR = 0x10;
+    ICM_WriteOneByte(INT_PIN_CONFIG_REG, INT1_LATCH__EN | INT_ANYRD_2CLEAR);
+    // I2C_MST_EN
+    const uint8_t I2C_MST_EN = 0x20;
+    ICM_WriteOneByte(USER_CTRL_REG, I2C_MST_EN);
+
+    if (ICM_SelectBank(USER_BANK_3) != HAL_OK) return HAL_ERROR;
+    // I2C Master mode and Speed 400 kHz
+    const uint8_t I2C_MST_CLK = 0x0D;
+    ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK);
+    // I2C_SLV0 _DLY_ enable
+    const uint8_t I2C_SLV0_DELAY_EN = 0x01;
+    ICM_WriteOneByte(I2C_MST_DELAY_CTRL_REG, I2C_SLV0_DELAY_EN);
+    // enable I2C	and EXT_SENS_DATA==1 Byte
+    const uint8_t I2C_SLV0_EN = 0x80,
+                  I2C_SLV0_LENG = 0x01;
+    ICM_WriteOneByte(I2C_SLV0_CTRL_REG, I2C_SLV0_EN | I2C_SLV0_LENG);
+
+    // Reset AK8963
+    const uint8_t MAG_RESET = 0x01;
+    ICM_MagWriteOneByte(MAG_CNTL3_REG, MAG_RESET);
+    HAL_Delay(1000);
+    ICM_MagWriteOneByte(MAG_CNTL2_REG, MAG_MODE_CONT_1);
     return HAL_OK;
 }
 
@@ -207,17 +235,69 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     gyro->x = signed_data[3] / 131.;
     gyro->y = signed_data[4] / 131.;
     gyro->z = signed_data[5] / 131.;
- 
-    // print raw data
-    // for (int i = 0; i < NUM_BYTES; i++) {
-    //     uprintf("%02x ", raw_data[i]);
-    // }
-    // print out the data
-    // uprintf("accel: %0.3f %0.3f %0.3f\t", accel_data[0], accel_data[1], accel_data[2]);
-    // uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro_data[0], gyro_data[1], gyro_data[2]);
-    
-    // print out the data
-    // uprintf("accel: %0.3f %0.3f %0.3f\t", accel->x, accel->y, accel->z);
-    // uprintf("gyro: %0.3f %0.3f %0.3f\n", gyro->x, gyro->y, gyro->z);
     return HAL_OK;
+}
+
+/*
+ *
+ * AUX I2C abstraction for magnetometer
+ *
+ */
+
+/**
+ * @brief Read one byte from magnetometer on internal I2C line
+ * @param reg: register address to read from
+ * @param data: pointer to store the data read
+ */
+HAL_StatusTypeDef ICM_MagReadOneByte(uint8_t reg, uint8_t *pData) {
+    if (expected_CurrUserBank != USER_BANK_3) {
+        if (ICM_SelectBank(USER_BANK_3) != HAL_OK) return HAL_ERROR;
+    }
+    // TODO: figure out why this works. See line 95 ofhttps://github.com/therealwokewok/ICM20948/blob/master/ICM20948.c
+    static const uint8_t magic_num = 0xff;
+    if (ICM_WriteOneByte(I2C_SLV0_ADDR_REG, READ_EN | MAG_I2C_SLV0_ADDR) != HAL_OK) return HAL_ERROR;
+    if (ICM_WriteOneByte(I2C_SLV0_REG_REG, reg) != HAL_OK) return HAL_ERROR;
+    if (ICM_WriteOneByte(I2C_SLV0_DO_REG, magic_num) != HAL_OK) return HAL_ERROR;
+
+    if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
+
+    return ICM_ReadOneByte(EXT_SLV_SENS_DATA_00_REG, pData);
+}
+
+/**
+ * @brief Write one byte from magnetometer on internal I2C line
+ * @param reg: magnetometer register address to write from
+ * @param data: value to write to magnetometer register
+ */
+HAL_StatusTypeDef ICM_MagWriteOneByte(uint8_t reg, uint8_t data) {
+    if (expected_CurrUserBank != USER_BANK_3) {
+        ICM_SelectBank(USER_BANK_3);
+    }
+    if (ICM_WriteOneByte(I2C_SLV0_ADDR_REG, MAG_I2C_SLV0_ADDR & WRITE_EN) != HAL_OK) return HAL_ERROR;
+    if (ICM_WriteOneByte(I2C_SLV0_REG_REG, reg) != HAL_OK) return HAL_ERROR;
+    return ICM_WriteOneByte(I2C_SLV0_DO_REG, data);
+}
+
+HAL_StatusTypeDef ICM_ReadMag(vector3_t *mag) {
+    uint8_t mag_buffer[10];
+    int16_t magn[3];
+    ICM_MagReadOneByte(0x01, mag_buffer + 0);
+
+    ICM_MagReadOneByte(0x11, mag_buffer + 1);
+    ICM_MagReadOneByte(0x12, mag_buffer + 2);
+    magn[0] = mag_buffer[1] | mag_buffer[2] << 8;
+
+    ICM_MagReadOneByte(0x13, mag_buffer + 3);
+    ICM_MagReadOneByte(0x14, mag_buffer + 4);
+    magn[1] = mag_buffer[3] | mag_buffer[4] << 8;
+
+    ICM_MagReadOneByte(0x15, mag_buffer + 5);
+    ICM_MagReadOneByte(0x16, mag_buffer + 6);
+    magn[2] = mag_buffer[5] | mag_buffer[6] << 8;
+
+    mag->x = magn[0] * 0.15;
+    mag->y = magn[1] * 0.15;
+    mag->z = magn[2] * 0.15;
+
+    return ICM_MagWriteOneByte(MAG_CNTL2_REG, MAG_MODE_SINGLE);
 }

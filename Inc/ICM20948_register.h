@@ -1,14 +1,16 @@
 #ifndef __ICM20948_REGISTER_H__
 #define __ICM20948_REGISTER_H__
 
+#define USER_BANK_SEL_REG 0x7F
+
 // user bank 0
 #define WHO_AM_I_REG 0x00
 #define WHO_AM_I_RESET_VAL 0xEA
 #define USER_CTRL_REG 0x03
 #define PWR_MGMT_1_REG 0x06
 #define PWR_MGMT_2_REG 0x07
-
-#define USER_BANK_SEL_REG 0x7F
+#define INT_PIN_CONFIG_REG 0x0F
+#define EXT_SLV_SENS_DATA_00_REG 0x3B
 
 // user bank 2
 #define GYRO_SMPLRT_DIV_REG 0x00
@@ -18,6 +20,19 @@
 #define ACCEL_CONFIG_REG 0x14
 #define ACCEL_GYRO_START_REG 0x2D
 #define ACCEL_GYRO_END_REG 0x38
+
+// user bank 3
+#define I2C_MST_CTRL_REG 0x01
+#define I2C_MST_DELAY_CTRL_REG 0x02
+#define I2C_SLV0_ADDR_REG 0x03
+#define I2C_SLV0_REG_REG 0x04
+#define I2C_SLV0_CTRL_REG 0x05
+#define I2C_SLV0_DO_REG 0x06
+
+// magnetometer registers
+#define MAG_I2C_SLV0_ADDR 0x0C
+#define MAG_CNTL2_REG 0x31
+#define MAG_CNTL3_REG 0x32
 
 // user register banks
 typedef enum UserBankSel_E {
@@ -71,5 +86,15 @@ typedef enum AccelLPF_E {
     ACCEL_LPF_8HZ = (6 << 3) | 1,
     ACCEL_LPF_500HZ = (7 << 3) | 1
 } AccelLPF_E;
+
+typedef enum MagMeasureMode_E {
+    MAG_MODE_POWERDOWN = 0,
+    MAG_MODE_SINGLE = 1,
+    MAG_MODE_CONT_1 = 2,
+    MAG_MODE_CONT_2 = 4,
+    MAG_MODE_CONT_3 = 6,
+    MAG_MODE_CONT_4 = 8,
+    MAG_MODE_SELFTEST = 0x10,
+} MagMeasureMode_E;
 
 #endif  // __ICM20948_REGISTER_H__
