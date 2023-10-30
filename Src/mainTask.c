@@ -22,10 +22,9 @@ void mainTask(void *pvParameters){
     uprintf("passed ICM init\n");
 
     IMUData_t imuData;
-    vector3_t magn;
     while (1){
-        ICM_ReadMag(&magn);
-        uprintf("mag: %0.3f %0.3f %0.3f\n", magn.x, magn.y, magn.z);
+        ICM_ReadMag(&imuData.accel, &imuData.gyro, &imuData.mag);
+        uprintf("mag: %0.3f %0.3f %0.3f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z);
         // if (ICM_ReadAccelGyro(&imuData.accel, &imuData.gyro) != HAL_OK) {
         //     Error_Handler();
         // }
