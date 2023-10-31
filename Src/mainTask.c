@@ -23,14 +23,14 @@ void mainTask(void *pvParameters){
 
     IMUData_t imuData;
     while (1){
-        ICM_ReadMag(&imuData.accel, &imuData.gyro, &imuData.mag);
-        uprintf("mag: %0.3f %0.3f %0.3f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z);
+        ICM_Read(&imuData);
+        uprintf("mag: %0.3f %0.3f %0.3f\t", imuData.mag.x, imuData.mag.y, imuData.mag.z);
         // if (ICM_ReadAccelGyro(&imuData.accel, &imuData.gyro) != HAL_OK) {
         //     Error_Handler();
         // }
         // print out the data
-        // uprintf("accel: %0.3f %0.3f %0.3f\t", imuData.accel.x, imuData.accel.y, imuData.accel.z);
-        // uprintf("gyro: %0.3f %0.3f %0.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        uprintf("accel: %0.3f %0.3f %0.3f\t", imuData.accel.x, imuData.accel.y, imuData.accel.z);
+        uprintf("gyro: %0.3f %0.3f %0.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
         
         vTaskDelay(20);
     }

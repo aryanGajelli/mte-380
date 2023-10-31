@@ -27,7 +27,7 @@ HAL_StatusTypeDef ICM_SetGyroSampleRate(float gyroSampleRate);
 HAL_StatusTypeDef ICM_SetAccelScaleAndLPF(AccelScale_E accelScale, AccelLPF_E accelLPF);
 HAL_StatusTypeDef ICM_SetAccelSampleRate(float accelSampleRate);
 HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro);
-HAL_StatusTypeDef ICM_ReadMag(vector3_t *accel, vector3_t *gyro, vector3_t *mag);
+HAL_StatusTypeDef ICM_Read(IMUData_t *data);
 HAL_StatusTypeDef ICMInit();
 HAL_StatusTypeDef ICM_AccelGyroInit();
 HAL_StatusTypeDef ICM_MagnetometerInit();

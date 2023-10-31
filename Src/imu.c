@@ -38,7 +38,7 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
 
     if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_154HZ) != HAL_OK) return HAL_ERROR;
-    if (ICM_SetGyroSampleRate(100) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroSampleRate(1100) != HAL_OK) return HAL_ERROR;
 
     if (ICM_SetAccelScaleAndLPF(ACCEL_SCALE_2G, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetAccelSampleRate(225) != HAL_OK) return HAL_ERROR;
@@ -70,17 +70,10 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
     const uint8_t I2C_MST_CLK_400kHz = 0x07;
     ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK_400kHz);
 
-    // set magnetometer data rate to 1.1kHz/ (2^1) = 136 Hz, page 68
-    data = 0x01;
+    // set magnetometer data rate to 1.1kHz/ (2^3) = 136 Hz, page 68
+    data = 0x03;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
-    // // I2C_SLV0 _DLY_ enable
-    // const uint8_t I2C_SLV0_DELAY_EN = 0x01;
-    // ICM_WriteOneByte(I2C_MST_DELAY_CTRL_REG, I2C_SLV0_DELAY_EN);
-    // // enable I2C	and EXT_SENS_DATA==1 Byte
-    // const uint8_t I2C_SLV0_EN = 0x80,
-    //               I2C_SLV0_LENG = 0x01;
-    // ICM_WriteOneByte(I2C_SLV0_CTRL_REG, I2C_SLV0_EN | I2C_SLV0_LENG);
 
     // Reset AK8963
     const uint8_t MAG_RESET = 0x01;
@@ -250,13 +243,14 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     return HAL_OK;
 }
 
-HAL_StatusTypeDef ICM_ReadMag(vector3_t *accel, vector3_t *gyro, vector3_t *mag) {
-    uint8_t raw_data[22];
+HAL_StatusTypeDef ICM_Read(IMUData_t *data) {
+    uint8_t gotBytes[23];
+    uint8_t *raw_data = gotBytes + 1;
     static int16_t signed_data[9];
     if (expected_CurrUserBank != USER_BANK_0) {
         if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
     }
-    ICM_ReadBytes(ACCEL_GYRO_START_REG, raw_data, 22);
+    ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, 22);
     signed_data[0] = (raw_data[0] << 8) | raw_data[1];
     signed_data[1] = (raw_data[2] << 8) | raw_data[3];
     signed_data[2] = (raw_data[4] << 8) | raw_data[5];
@@ -269,6 +263,7 @@ HAL_StatusTypeDef ICM_ReadMag(vector3_t *accel, vector3_t *gyro, vector3_t *mag)
     signed_data[7] = (raw_data[17] << 8) | raw_data[16];
     signed_data[8] = (raw_data[19] << 8) | raw_data[18];
 
+    vector3_t *accel = &data->accel, *gyro = &data->gyro, *mag = &data->mag;
 
     accel->x = signed_data[0] * 9.81 / -16384.0;
     accel->y = signed_data[1] * 9.81 / -16384.0;
