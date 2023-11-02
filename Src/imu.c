@@ -5,6 +5,7 @@
 #include "bsp.h"
 #include "debug.h"
 #include "stm32f4xx_hal.h"
+#include "motion_gc.h"
 
 UserBankSel_E expected_CurrUserBank = USER_BANK_ERROR;
 
@@ -41,7 +42,7 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
     if (ICM_SetGyroSampleRate(1100) != HAL_OK) return HAL_ERROR;
 
     if (ICM_SetAccelScaleAndLPF(ACCEL_SCALE_2G, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
-    if (ICM_SetAccelSampleRate(225) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetAccelSampleRate(1100) != HAL_OK) return HAL_ERROR;
     HAL_Delay(50);
     return HAL_OK;
 }
@@ -67,11 +68,11 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
 
     if (ICM_SelectBank(USER_BANK_3) != HAL_OK) return HAL_ERROR;
     // I2C Master mode and Speed 400 kHz
-    const uint8_t I2C_MST_CLK_400kHz = 0x07;
+    const uint8_t I2C_MST_CLK_400kHz = 0x0D;
     ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK_400kHz);
 
     // set magnetometer data rate to 1.1kHz/ (2^3) = 136 Hz, page 68
-    data = 0x03;
+    data = 0x01;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
 
@@ -243,14 +244,20 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     return HAL_OK;
 }
 
+/**
+ * @brief Read the Accelerometer, Gyroscope, and Magnetometer data from ICM20948
+ * @param data: pointer to IMUData_t struct to store the data
+ */
 HAL_StatusTypeDef ICM_Read(IMUData_t *data) {
-    uint8_t gotBytes[23];
+    static const size_t NUM_BYTES = ACCEL_GYRO_MAG_END_REG - ACCEL_GYRO_START_REG + 1;
+    uint8_t gotBytes[NUM_BYTES + 1]; // account for transmit byte garbage values in miso
     uint8_t *raw_data = gotBytes + 1;
-    static int16_t signed_data[9];
+    int16_t signed_data[9];
     if (expected_CurrUserBank != USER_BANK_0) {
         if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
     }
-    ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, 22);
+    ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, NUM_BYTES);
+    data->timestamp = HAL_GetTick();
     signed_data[0] = (raw_data[0] << 8) | raw_data[1];
     signed_data[1] = (raw_data[2] << 8) | raw_data[3];
     signed_data[2] = (raw_data[4] << 8) | raw_data[5];
@@ -279,3 +286,7 @@ HAL_StatusTypeDef ICM_Read(IMUData_t *data) {
     return HAL_OK;
 
 }
+
+/**
+ * @brief Calibrate the gyroscope
+*/
