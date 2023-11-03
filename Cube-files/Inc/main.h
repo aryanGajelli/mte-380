@@ -81,16 +81,28 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define IR4_Pin GPIO_PIN_0
 #define IR4_GPIO_Port GPIOB
+#define COLOR_S3_Pin GPIO_PIN_1
+#define COLOR_S3_GPIO_Port GPIOB
 #define IMU_SCK_Pin GPIO_PIN_10
 #define IMU_SCK_GPIO_Port GPIOB
 #define IMU_CS_Pin GPIO_PIN_12
 #define IMU_CS_GPIO_Port GPIOB
+#define COLOR_S0_Pin GPIO_PIN_13
+#define COLOR_S0_GPIO_Port GPIOB
+#define COLOR_S1_Pin GPIO_PIN_14
+#define COLOR_S1_GPIO_Port GPIOB
+#define COLOR_S2_Pin GPIO_PIN_15
+#define COLOR_S2_GPIO_Port GPIOB
+#define COLOR_1_CS_Pin GPIO_PIN_9
+#define COLOR_1_CS_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+#define COLOR_1_Pin GPIO_PIN_6
+#define COLOR_1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
