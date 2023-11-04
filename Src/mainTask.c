@@ -9,6 +9,7 @@
 #include "imu.h"
 #include "mathUtils.h"
 #include "color_sensor.h"
+#include "servo.h"
 #include <stdio.h>
 
 
@@ -16,6 +17,7 @@ void mainTask(void *pvParameters){
     uprintf("mainTask\n");
     colorSensorInit();
     setColor(BLUE);
+    servoInit();
     // uint32_t status = ICMInit();
     // if (status != HAL_OK) {
     //     uprintf("ICMInit failed on line: %lu\n", status);
@@ -25,9 +27,24 @@ void mainTask(void *pvParameters){
     // uprintf("passed ICM init\n");
 
     // IMUData_t imuData;
-    
+    float angle = 5;
+    float inc = 0.1;
+    // setServoDutyCycle(pwm);
+
+    // setServoAngle(0);
     while (1){
-        uprintf("%lf\n", ADC_to_Volt(adcBuf[0]));
+        // uprintf("%lu\n", __HAL_TIM_GET_COMPARE(&SERVO_TIMER_HANDLE, TIM_CHANNEL_1));
+        angle += inc;
+        if (angle > 180){
+            inc = -inc;
+        }
+        if (angle < 0){
+            inc = -inc;
+        }
+
+        // setServoAngle(angle);
+        
+        // uprintf("%lf\n", ADC_to_Volt(adcBuf[0]));
         // selectColorSensor(COLOR_3);
         // uprintf("%lu ", getFreq());
         // vTaskDelay(10);

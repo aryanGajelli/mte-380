@@ -13,6 +13,7 @@ typedef union vector3_t {
     };
 } vector3_t;
 
+double map(double x, double a, double b, double c, double d);
 // typedef struct vector3_t {
 //     float x;
 //     float y;
