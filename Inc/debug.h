@@ -9,7 +9,7 @@
 #include "stm32f4xx_hal.h"
 
 #define UART_PRINT_TIMEOUT 100
-#define PRINT_QUEUE_LENGTH 5
+#define PRINT_QUEUE_LENGTH 10
 #define PRINT_QUEUE_STRING_SIZE 100
 #define PRINT_QUEUE_SEND_TIMEOUT_TICKS 10
 
@@ -37,4 +37,5 @@ HAL_StatusTypeDef debugInit(void);
         xQueueSendFromISR(printQueue, buf, NULL);            \
     } while (0)
 
+void _handleError(char *file, int line);
 #endif  // __DEBUG_H__

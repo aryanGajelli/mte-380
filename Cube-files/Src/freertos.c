@@ -136,7 +136,7 @@ void MX_FREERTOS_Init(void) {
   mainTaskNameHandle = osThreadCreate(osThread(mainTaskName), NULL);
 
   /* definition and creation of printTaskName */
-  osThreadDef(printTaskName, printTask, osPriorityLow, 0, 128);
+  osThreadDef(printTaskName, printTask, osPriorityLow, 0, 256);
   printTaskNameHandle = osThreadCreate(osThread(printTaskName), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

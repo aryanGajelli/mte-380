@@ -5,17 +5,33 @@
 #include "main.h"
 #include "debug.h"
 #include "bsp.h"
+#include "sensors.h"
+#include "imu.h"
+#include "mathUtils.h"
+#include <stdio.h>
 
 
 void mainTask(void *pvParameters){
-    uprintf("Starting up\n");
-    uint32_t adcVals[6];
-    HAL_ADC_Start_DMA(&ADC_HANDLE, adcVals, 6);
+    uprintf("mainTask\n");
+    uint32_t status = ICMInit();
+    if (status != HAL_OK) {
+        uprintf("ICMInit failed on line: %lu\n", status);
+        vTaskDelay(1000);
+        Error_Handler();
+    }
+    uprintf("passed ICM init\n");
+
+    IMUData_t imuData;
     while (1){
-        // read adc values
-        uprintf("ADC values: %lu, %lu, %lu, %lu, %lu, %lu\n", adcVals[0], adcVals[1], adcVals[2], adcVals[3], adcVals[4], adcVals[5]);
-        // blink led
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        ICM_Read(&imuData);
+        uprintf("mag: %0.3f %0.3f %0.3f\t", imuData.mag.x, imuData.mag.y, imuData.mag.z);
+        // if (ICM_ReadAccelGyro(&imuData.accel, &imuData.gyro) != HAL_OK) {
+        //     Error_Handler();
+        // }
+        // print out the data
+        uprintf("accel: %0.3f %0.3f %0.3f\t", imuData.accel.x, imuData.accel.y, imuData.accel.z);
+        uprintf("gyro: %0.3f %0.3f %0.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        
         vTaskDelay(20);
     }
 }
