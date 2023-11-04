@@ -41,7 +41,7 @@ void ADC_Calibrate(){
 sensors_t sensors;
 uint32_t adcBuf[6];
 HAL_StatusTypeDef sensorsInit(void) {
-    ADC_Calibrate();
+    // ADC_Calibrate();
     return HAL_ADC_Start_DMA(&ADC_HANDLE, adcBuf, 6);
 }
 

@@ -6,8 +6,8 @@
 typedef enum {
     RED = 0b00,
     GREEN = 0b11,
-    BLUE = 0b01,
-    CLEAR = 0b10
+    BLUE = 0b10,
+    CLEAR = 0b01
 } Color_E;
 
 typedef enum {
@@ -22,8 +22,17 @@ typedef struct ColorFreq_T {
     uint32_t freq;
 } ColorFreq_T;
 
+typedef enum {
+    COLOR_1,
+    COLOR_2,
+    COLOR_3
+} ColorSensor_E;
+
 extern volatile uint16_t gu16_TIM2_OVC;
 extern volatile ColorFreq_T colorFreqs[4];
 void colorSensorInit();
+uint32_t getFreq();
+HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs);
 char* colorToStr(Color_E color);
-#endif // __COLOR_SENSOR_H__
+void setColor(Color_E color);
+#endif  // __COLOR_SENSOR_H__

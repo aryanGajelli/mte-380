@@ -32,7 +32,6 @@
 #include "backtrace.h"
 #include "debug.h"
 #include "bsp.h"
-#include "color_sensor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -190,9 +189,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == COLOR_TIMER_INSTANCE) {
-    gu16_TIM2_OVC++;    
-  }
+
   /* USER CODE END Callback 1 */
 }
 

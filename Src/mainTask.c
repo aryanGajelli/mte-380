@@ -15,6 +15,7 @@
 void mainTask(void *pvParameters){
     uprintf("mainTask\n");
     colorSensorInit();
+    setColor(BLUE);
     // uint32_t status = ICMInit();
     // if (status != HAL_OK) {
     //     uprintf("ICMInit failed on line: %lu\n", status);
@@ -24,8 +25,14 @@ void mainTask(void *pvParameters){
     // uprintf("passed ICM init\n");
 
     // IMUData_t imuData;
+    
     while (1){
-        
+        selectColorSensor(COLOR_3);
+        uprintf("%lu ", getFreq());
+        selectColorSensor(COLOR_1);
+        uprintf("%lu ", getFreq());
+        selectColorSensor(COLOR_2);
+        uprintf("%lu\n", getFreq());
         // print the color and freq
         // uprintf("%c %lu %c %lu %c %lu %c %lu\n", 'R', colorFreqs[0].freq, 'B', colorFreqs[1].freq, 'C', colorFreqs[2].freq, 'G', colorFreqs[3].freq);
         // uprintf("Test\n");
