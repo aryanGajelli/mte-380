@@ -12,6 +12,9 @@ typedef struct sensors_t {
     double dist;
 } sensors_t;
 
+#define NUM_ADC_CHANNELS 6
+extern uint32_t adcBuf[NUM_ADC_CHANNELS];
 HAL_StatusTypeDef sensorsInit(void);
 sensors_t* getSensors_Handle(void);
+double ADC_to_Volt(uint32_t adc_val);
 #endif // __SENSORS_H__

@@ -1,7 +1,7 @@
 #include "color_sensor.h"
+
 #include "bsp.h"
 #include "debug.h"
-
 #include "stm32f4xx_hal.h"
 
 uint32_t F_CLK;
@@ -14,11 +14,11 @@ const uint32_t redHigh = 80500;
 const uint32_t greenLow = 1000;
 const uint32_t greenHigh = 47500;
 
-const uint32_t blueLow = 700;
-const uint32_t blueHigh = 47500;
+const uint32_t clearLow = 700;
+const uint32_t clearHigh = 47500;
 
-const uint32_t clearLow = 5600;
-const uint32_t clearHigh = 170000;
+const uint32_t blueLow = 5600;
+const uint32_t blueHigh = 170000;
 
 uint32_t gu32_Freq = 0;
 
@@ -49,7 +49,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
             } else {
                 gu32_Ticks = (0xFFFF - gu32_T1) + gu32_T2;
             }
-                   
+
             __HAL_TIM_SET_COUNTER(&COLOR_TIMER_HANDLE, 0);
             isFirstCaptured = 0;
             // Stop capturing after recording 1 pulse to prevent saturation of interrupts on the cpu
@@ -60,10 +60,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 
 /**
  * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
-*/
+ */
 uint32_t getFreq() {
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (isFirstCaptured);
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
     return F_CLK / gu32_Ticks;
 }
 
@@ -92,9 +93,8 @@ char* colorToStr(Color_E color) {
 
 void setColor(Color_E color) {
     HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
-    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);    
+    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
 }
-
 
 void colorSensorInit() {
     COLOR_1_DIS();
@@ -106,12 +106,11 @@ void colorSensorInit() {
     HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1);
     setColorSensorFreqScaling(FREQ_SCALE_20);
     setColor(RED);
-
 }
 
 /**
  * @brief Garauntees that only 1 sensor will be selected at once.
-*/
+ */
 HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs) {
     COLOR_1_DIS();
     COLOR_2_DIS();

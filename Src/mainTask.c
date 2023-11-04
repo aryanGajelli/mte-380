@@ -27,12 +27,15 @@ void mainTask(void *pvParameters){
     // IMUData_t imuData;
     
     while (1){
-        selectColorSensor(COLOR_3);
-        uprintf("%lu ", getFreq());
-        selectColorSensor(COLOR_1);
-        uprintf("%lu ", getFreq());
-        selectColorSensor(COLOR_2);
-        uprintf("%lu\n", getFreq());
+        uprintf("%lf\n", ADC_to_Volt(adcBuf[0]));
+        // selectColorSensor(COLOR_3);
+        // uprintf("%lu ", getFreq());
+        // vTaskDelay(10);
+        // selectColorSensor(COLOR_1);
+        // uprintf("%lu ", getFreq());
+        // vTaskDelay(10);
+        // selectColorSensor(COLOR_2);
+        // uprintf("%lu\n", getFreq());
         // print the color and freq
         // uprintf("%c %lu %c %lu %c %lu %c %lu\n", 'R', colorFreqs[0].freq, 'B', colorFreqs[1].freq, 'C', colorFreqs[2].freq, 'G', colorFreqs[3].freq);
         // uprintf("Test\n");
@@ -45,6 +48,6 @@ void mainTask(void *pvParameters){
         // uprintf("accel: %0.3f %0.3f %0.3f\t", imuData.accel.x, imuData.accel.y, imuData.accel.z);
         // uprintf("gyro: %0.3f %0.3f %0.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
         
-        vTaskDelay(20);
+        vTaskDelay(10);
     }
 }
