@@ -21,6 +21,7 @@
 #define ACCEL_CONFIG_REG 0x14
 #define ACCEL_GYRO_START_REG 0x2D
 #define ACCEL_GYRO_END_REG 0x38
+#define ACCEL_GYRO_MAG_END_REG 0x43
 
 // user bank 3
 #define I2C_MST_CTRL_REG 0x01

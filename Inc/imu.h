@@ -13,6 +13,7 @@ typedef struct IMUData_t {
     vector3_t accel;
     vector3_t gyro;
     vector3_t mag;
+    uint32_t timestamp;
 } IMUData_t;
 
 HAL_StatusTypeDef ICM_SelectBank(UserBankSel_E bank);

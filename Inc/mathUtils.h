@@ -7,9 +7,9 @@
 typedef union vector3_t {
     double v[3];
     struct {
-        float x;
-        float y;
-        float z;
+        double x;
+        double y;
+        double z;
     };
 } vector3_t;
 

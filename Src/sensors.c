@@ -1,15 +1,17 @@
-#include "bsp.h"
 #include "sensors.h"
+
+#include <stdbool.h>
+
+#include "bsp.h"
 #include "debug.h"
 #include "stm32f4xx_hal.h"
-#include <stdbool.h>
 
 bool ADC_CALIBRATED = false;
 bool ADC_Complete = false;
-float VDDA;
+double VDDA = 3.31;
 float VDDA_DIV_4095;
-void ADC_Calibrate(){
-    uint16_t VREFINT_CAL = (*((uint16_t *)VREFINT_CAL_ADDR));
+void ADC_Calibrate() {
+    uint16_t VREFINT_CAL = (*((uint16_t*)VREFINT_CAL_ADDR));
     // set channel to VREFINT
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.Channel = ADC_CHANNEL_VREFINT;
@@ -19,16 +21,16 @@ void ADC_Calibrate(){
 
     // start DMA ADC
     const size_t bufLen = 100;
-    uint32_t buf[6*bufLen];
-    
-    HAL_ADC_Start_DMA(&ADC_HANDLE, buf, sizeof(buf)/sizeof(buf[0]));
+    uint32_t buf[6 * bufLen];
+
+    HAL_ADC_Start_DMA(&ADC_HANDLE, buf, sizeof(buf) / sizeof(buf[0]));
     HAL_Delay(10);
     HAL_ADC_Stop_DMA(&ADC_HANDLE);
 
     // average VREFINT_DATA located at buf[n%6 == 0]
     float VREFINT_DATA = 0;
     for (int i = 0; i < bufLen; i++) {
-        VREFINT_DATA += buf[i*6];
+        VREFINT_DATA += buf[i * 6];
     }
     VREFINT_DATA /= bufLen;
     // calculate VDDA
@@ -39,10 +41,10 @@ void ADC_Calibrate(){
 }
 
 sensors_t sensors;
-uint32_t adcBuf[6];
+uint32_t adcBuf[NUM_ADC_CHANNELS];
 HAL_StatusTypeDef sensorsInit(void) {
-    ADC_Calibrate();
-    return HAL_ADC_Start_DMA(&ADC_HANDLE, adcBuf, 6);
+    // ADC_Calibrate();
+    return HAL_ADC_Start_DMA(&ADC_HANDLE, adcBuf, NUM_ADC_CHANNELS);
 }
 
 sensors_t* getSensors_Handle(void) {
@@ -53,18 +55,3 @@ double ADC_to_Volt(uint32_t adc_val) {
     double offset = 0.00;
     return VDDA * adc_val / 4095 + offset;
 }
-// void sensorTask(void *pvParameters) {
-//     while (1) {
-//         if (ADC_Complete){
-//             sensors.ir1 = ADC_to_Volt(adcBuf[0]);
-//             sensors.ir2 = ADC_to_Volt(adcBuf[1]);
-//             sensors.ir3 = ADC_to_Volt(adcBuf[2]);
-//             sensors.ir4 = ADC_to_Volt(adcBuf[3]);
-//             sensors.ir5 = ADC_to_Volt(adcBuf[4]);
-//             sensors.dist = ADC_to_Volt(adcBuf[5]);
-
-//             ADC_Complete = false;          
-//         }
-//         vTaskDelay(10);
-//     }
-// }

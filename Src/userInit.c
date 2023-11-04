@@ -1,9 +1,10 @@
 #include "userInit.h"
 #include "debug.h"
 #include "sensors.h"
-#include "imu.h"
+#include "bsp.h"
 
 void userInit(void) {
+   
     if (debugInit() != HAL_OK) {
         Error_Handler();
     }
@@ -14,6 +15,7 @@ void userInit(void) {
 
 
     printf("----------------------------------\nFinished User Init\n");
+    
 }
 
 // void vApplicationStackOverflowHook( TaskHandle_t xTask,
