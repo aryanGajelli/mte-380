@@ -59,8 +59,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
-#define DIST_IR_Pin GPIO_PIN_0
-#define DIST_IR_GPIO_Port GPIOC
 #define IMU_MISO_Pin GPIO_PIN_2
 #define IMU_MISO_GPIO_Port GPIOC
 #define IMU_MOSI_Pin GPIO_PIN_3
@@ -73,6 +71,8 @@ void Error_Handler(void);
 #define LD2_GPIO_Port GPIOA
 #define COLOR_3_CS_Pin GPIO_PIN_4
 #define COLOR_3_CS_GPIO_Port GPIOC
+#define DIST_IR_Pin GPIO_PIN_0
+#define DIST_IR_GPIO_Port GPIOB
 #define COLOR_S3_Pin GPIO_PIN_1
 #define COLOR_S3_GPIO_Port GPIOB
 #define COLOR_2_CS_Pin GPIO_PIN_2
@@ -95,8 +95,8 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define COLOR_1_Pin GPIO_PIN_6
-#define COLOR_1_GPIO_Port GPIOB
+#define COLOR_IN_Pin GPIO_PIN_6
+#define COLOR_IN_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

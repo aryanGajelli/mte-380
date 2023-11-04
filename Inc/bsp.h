@@ -13,5 +13,8 @@
 #define IMU_SPI_HANDLE hspi2
 #define COLOR_TIMER_HANDLE htim4
 #define COLOR_TIMER_INSTANCE (COLOR_TIMER_HANDLE.Instance)
+#define SERVO_TIMER_HANDLE htim11
+#define SERVO_TIMER_INSTANCE (SERVO_TIMER_HANDLE.Instance)
+
 
 #endif // __BSP_H__
