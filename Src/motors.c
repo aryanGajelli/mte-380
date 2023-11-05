@@ -4,14 +4,14 @@
 #include "debug.h"
 #include "main.h"
 
+uint32_t motorARR;
 HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle) {
     if (dutyCycle < 0 || dutyCycle > 100) {
         uprintf("Invalid duty cycle: %f\n", dutyCycle);
         return HAL_ERROR;
     }
 
-    uint32_t ARR = __HAL_TIM_GET_AUTORELOAD(&MOTORS_TIMER_HANDLE);
-    uint32_t CRR = dutyCycle * ARR / 100.;
+    uint32_t CRR = dutyCycle * motorARR / 100.;
 
     if (motor == MOTOR_LEFT)
         __HAL_TIM_SET_COMPARE(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_1, CRR);
@@ -35,6 +35,7 @@ void setMotorDir(Motor_E motor, MotorDirection_E dir) {
 }
 
 HAL_StatusTypeDef motorsInit(void) {
+    motorARR = __HAL_TIM_GET_AUTORELOAD(&MOTORS_TIMER_HANDLE);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_2);
     setMotorDir(MOTOR_LEFT, MOTOR_FWD);
