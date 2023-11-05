@@ -59,10 +59,18 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define MOTOR_L_IN1_Pin GPIO_PIN_0
+#define MOTOR_L_IN1_GPIO_Port GPIOC
+#define MOTOR_L_IN2_Pin GPIO_PIN_1
+#define MOTOR_L_IN2_GPIO_Port GPIOC
 #define IMU_MISO_Pin GPIO_PIN_2
 #define IMU_MISO_GPIO_Port GPIOC
 #define IMU_MOSI_Pin GPIO_PIN_3
 #define IMU_MOSI_GPIO_Port GPIOC
+#define MOTOR_L_EN_Pin GPIO_PIN_0
+#define MOTOR_L_EN_GPIO_Port GPIOA
+#define MOTOR_R_EN_Pin GPIO_PIN_1
+#define MOTOR_R_EN_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
@@ -87,7 +95,7 @@ void Error_Handler(void);
 #define COLOR_S1_GPIO_Port GPIOB
 #define COLOR_S2_Pin GPIO_PIN_15
 #define COLOR_S2_GPIO_Port GPIOB
-#define COLOR_1_CS_Pin GPIO_PIN_9
+#define COLOR_1_CS_Pin GPIO_PIN_12
 #define COLOR_1_CS_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA

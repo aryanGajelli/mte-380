@@ -31,7 +31,6 @@ HAL_StatusTypeDef setServoDutyCycle(float dutyCycle) {
         return HAL_ERROR;
     }
 
-    uint32_t ARR = __HAL_TIM_GET_AUTORELOAD(&SERVO_TIMER_HANDLE);
     uint32_t CRR = dutyCycle * ARR / 100.;
     __HAL_TIM_SET_COMPARE(&SERVO_TIMER_HANDLE, TIM_CHANNEL_1, CRR);
     return HAL_OK;

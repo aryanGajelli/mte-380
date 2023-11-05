@@ -10,22 +10,15 @@
 #include "mathUtils.h"
 #include "color_sensor.h"
 #include "servo.h"
+#include "motors.h"
 #include <stdio.h>
 
 
 void mainTask(void *pvParameters){
     uprintf("mainTask\n");
     servoInit();
-    
+    motorsInit();
     while (1){    
-        if (getServoAngle() == CLAW_OPEN_ANGLE){
-            setServoAngle(CLAW_CLOSED_ANGLE);
-            vTaskDelay(700);
-        }
-        else{
-            setServoAngle(CLAW_OPEN_ANGLE);
-            vTaskDelay(700);
-        }
-        vTaskDelay(10);
+
     }
 }
