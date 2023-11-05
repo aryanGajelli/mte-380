@@ -103,6 +103,10 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+#define MOTOR_R_IN3_Pin GPIO_PIN_4
+#define MOTOR_R_IN3_GPIO_Port GPIOB
+#define MOTOR_R_IN4_Pin GPIO_PIN_5
+#define MOTOR_R_IN4_GPIO_Port GPIOB
 #define COLOR_IN_Pin GPIO_PIN_6
 #define COLOR_IN_GPIO_Port GPIOB
 
