@@ -19,9 +19,23 @@ void mainTask(void *pvParameters){
     uprintf("mainTask\n");
     servoInit();
     motorsInit();
-    getDemoState();
-    demoStateMachine();
+    colorSensorInit();
+    // getDemoState();
+    // demoStateMachine();
+    // selectColorSensor(COLOR_1);
+    demoFwd();
+    vTaskDelay(1000);
+    demoBwd();
+    vTaskDelay(1000);
+    demoLeft();
+    vTaskDelay(500);
+    demoRight();
+    vTaskDelay(500);
+    demoDistSense();
     while (1){
+        // print dist value
+        uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
+        // uprintf("color: %d\n", getFreq());
         vTaskDelay(10);
     }
 }

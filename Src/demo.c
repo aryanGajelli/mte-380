@@ -12,14 +12,7 @@
 #include "task.h"
 
 
-void demoInit();
-void demoEnd();
-void demoFwd();
-void demoBwd();
-void demoLeft();
-void demoRight();
-void demoDistSense();
-void demoLineSense();
+
 
 DemoState_T demoStates[] = {
     {DEMO_INIT, demoInit},
@@ -119,13 +112,18 @@ void demoRight() {
 void demoDistSense() {
     // drive forward until distance sensor detects something
     uprintf("demoDistSense\n");
-    while (ADC_to_Volt(adcBuf[0]) < 0.5) {
-        setMotorDir(MOTOR_LEFT, MOTOR_FWD);
-        setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
-        setMotorDutyCycle(MOTOR_LEFT, 100);
-        setMotorDutyCycle(MOTOR_RIGHT, 100);
+    setMotorDir(MOTOR_LEFT, MOTOR_FWD);
+    setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
+    setMotorDutyCycle(MOTOR_LEFT, 100);
+    setMotorDutyCycle(MOTOR_RIGHT, 100);
+    while (ADC_to_Volt(adcBuf[0]) < 1.7) {
+        
         vTaskDelay(1);
     }
+    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
+    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
+    setMotorDutyCycle(MOTOR_LEFT, 0);
+    setMotorDutyCycle(MOTOR_RIGHT, 0);
 }
 
 void demoLineSense() {

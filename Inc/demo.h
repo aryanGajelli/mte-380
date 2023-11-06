@@ -20,4 +20,13 @@ typedef struct DemoState_T {
 DemoStates_E nextDemoState();
 DemoStates_E getDemoState();
 void demoStateMachine();
+
+void demoInit();
+void demoEnd();
+void demoFwd();
+void demoBwd();
+void demoLeft();
+void demoRight();
+void demoDistSense();
+void demoLineSense();
 #endif  // __DEMO_H__
