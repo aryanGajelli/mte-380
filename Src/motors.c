@@ -38,8 +38,8 @@ HAL_StatusTypeDef motorsInit(void) {
     motorARR = __HAL_TIM_GET_AUTORELOAD(&MOTORS_TIMER_HANDLE);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_2);
-    setMotorDir(MOTOR_LEFT, MOTOR_FWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
+    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
+    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
     setMotorDutyCycle(MOTOR_LEFT, 0);
     setMotorDutyCycle(MOTOR_RIGHT, 0);
     return HAL_OK;

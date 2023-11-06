@@ -61,7 +61,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 /**
  * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
  */
-uint32_t getFreq() {
+int32_t getFreq() {
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
     while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
         ;
@@ -105,7 +105,7 @@ void colorSensorInit() {
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
     HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1);
     setColorSensorFreqScaling(FREQ_SCALE_20);
-    setColor(RED);
+    setColor(BLUE);
 }
 
 /**
@@ -129,4 +129,19 @@ HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs) {
         default:
             return HAL_ERROR;
     }
+}
+
+float getLineError() {
+    // dot product of the color vector and weight vector, middle being the highest weight
+    static const int32_t NO_LINE_FREQ = 30000;
+    static const int32_t LINE_FREQ = 110000;
+    static const float WEIGHTS[3] = {0.5, 1, 0.5};
+    float error = 0;
+    selectColorSensor(COLOR_1);
+    error += (LINE_FREQ - getFreq(COLOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
+    selectColorSensor(COLOR_2);
+    error += (LINE_FREQ - getFreq(COLOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
+    selectColorSensor(COLOR_3);
+    error += (LINE_FREQ - getFreq(COLOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
+    return error;
 }
