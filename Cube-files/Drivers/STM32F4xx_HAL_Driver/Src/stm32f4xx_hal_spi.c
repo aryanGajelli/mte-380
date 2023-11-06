@@ -198,6 +198,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "main.h"
 
 /** @addtogroup STM32F4xx_HAL_Driver
   * @{
@@ -1709,6 +1710,7 @@ HAL_StatusTypeDef HAL_SPI_Transmit_DMA(SPI_HandleTypeDef *hspi, uint8_t *pData, 
   /* Enable the SPI Error Interrupt Bit */
   __HAL_SPI_ENABLE_IT(hspi, (SPI_IT_ERR));
 
+	IMU_CS_GPIO_Port->BSRR = IMU_CS_Pin << 16U;
   /* Enable Tx DMA Request */
   SET_BIT(hspi->Instance->CR2, SPI_CR2_TXDMAEN);
 
@@ -1966,6 +1968,7 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *hspi, uint8_t *
   }
   /* Enable the SPI Error Interrupt Bit */
   __HAL_SPI_ENABLE_IT(hspi, (SPI_IT_ERR));
+	IMU_CS_GPIO_Port->BSRR = IMU_CS_Pin << 16U;
 
   /* Enable Tx DMA Request */
   SET_BIT(hspi->Instance->CR2, SPI_CR2_TXDMAEN);

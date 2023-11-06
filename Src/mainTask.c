@@ -1,40 +1,55 @@
-#include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
-#include "FreeRTOS.h"
-#include "task.h"
-#include "main.h"
-#include "debug.h"
-#include "bsp.h"
-#include "sensors.h"
-#include "imu.h"
-#include "mathUtils.h"
-#include "color_sensor.h"
-#include "servo.h"
-#include "motors.h"
-#include "demo.h"
 #include <stdio.h>
 
+#include "FreeRTOS.h"
+#include "bsp.h"
+#include "color_sensor.h"
+#include "debug.h"
+#include "demo.h"
+#include "imu.h"
+#include "main.h"
+#include "mathUtils.h"
+#include "motors.h"
+#include "sensors.h"
+#include "servo.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal.h"
+#include "task.h"
 
-void mainTask(void *pvParameters){
+void mainTask(void *pvParameters) {
     uprintf("mainTask\n");
     servoInit();
+
     motorsInit();
     colorSensorInit();
     // getDemoState();
     // demoStateMachine();
     // selectColorSensor(COLOR_1);
+    while (!isSDemoStarted) vTaskDelay(1);
+    setServoAngle(CLAW_OPEN_ANGLE);
+    HAL_Delay(500);
     demoFwd();
-    vTaskDelay(1000);
+    HAL_Delay(1000);
+    motorSoftStop();
+    HAL_Delay(500);
     demoBwd();
-    vTaskDelay(1000);
+    HAL_Delay(1000);
+    motorSoftStop();
+    HAL_Delay(500);
     demoLeft();
-    vTaskDelay(500);
+    HAL_Delay(1000);
+    motorSoftStop();
+    HAL_Delay(500);
     demoRight();
-    vTaskDelay(500);
+    HAL_Delay(1000);
+    motorSoftStop();
+    HAL_Delay(500);
     demoDistSense();
-    while (1){
+    HAL_Delay(200);
+    setServoAngle(CLAW_CLOSED_ANGLE);
+
+    while (1) {
         // print dist value
-        uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
+        // uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
         // uprintf("color: %d\n", getFreq());
         vTaskDelay(10);
     }

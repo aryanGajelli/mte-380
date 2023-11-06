@@ -16,5 +16,6 @@ typedef enum {
 
 HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle);
 void setMotorDir(Motor_E motor, MotorDirection_E dir);
+void motorSoftStop();
 HAL_StatusTypeDef motorsInit(void);
 #endif  // __MOTORS_H__

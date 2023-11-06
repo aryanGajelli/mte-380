@@ -1,6 +1,7 @@
 #ifndef __DEMO_H__
 #define __DEMO_H__
 
+#include "stm32f4xx_hal.h"
 typedef enum {
     DEMO_INIT,
     DEMO_FWD,
@@ -17,6 +18,7 @@ typedef struct DemoState_T {
     void (*demoFunc)();
 } DemoState_T;
 
+extern uint8_t isSDemoStarted;
 DemoStates_E nextDemoState();
 DemoStates_E getDemoState();
 void demoStateMachine();

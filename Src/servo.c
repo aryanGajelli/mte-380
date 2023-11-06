@@ -46,5 +46,6 @@ HAL_StatusTypeDef servoInit() {
     maxDutyCycle = MAX_SERVO_PERIOD_MS / pwmPeriod_ms * 100;
 
     HAL_TIM_PWM_Start(&SERVO_TIMER_HANDLE, TIM_CHANNEL_1);
-    return setServoAngle(CLAW_OPEN_ANGLE);
+    return HAL_OK;
+    // return setServoAngle(CLAW_OPEN_ANGLE);
 }

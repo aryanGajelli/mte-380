@@ -27,13 +27,15 @@ DemoState_T demoStates[] = {
 
 DemoStates_E demoState = DEMO_INIT;
 
+uint8_t isSDemoStarted = 0;
 #define DEBOUNCE_TIME 150
 volatile uint32_t buttonPressTime = 0;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-    if (GPIO_Pin == B1_Pin) {
+    if (GPIO_Pin == B1_Pin && !isSDemoStarted) {
         if (HAL_GetTick() - buttonPressTime < DEBOUNCE_TIME) return;
         buttonPressTime = HAL_GetTick();
-        nextDemoState();
+        isSDemoStarted = 1;
+        // nextDemoState();
     }
 }
 
@@ -114,16 +116,14 @@ void demoDistSense() {
     uprintf("demoDistSense\n");
     setMotorDir(MOTOR_LEFT, MOTOR_FWD);
     setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
-    setMotorDutyCycle(MOTOR_LEFT, 100);
-    setMotorDutyCycle(MOTOR_RIGHT, 100);
-    while (ADC_to_Volt(adcBuf[0]) < 1.7) {
-        
-        vTaskDelay(1);
+    setMotorDutyCycle(MOTOR_LEFT, 5);
+    setMotorDutyCycle(MOTOR_RIGHT, 5);
+    while (ADC_to_Volt(adcBuf[0]) < .7) {
+        uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
+        vTaskDelay(50);
     }
-    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
-    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
-    setMotorDutyCycle(MOTOR_LEFT, 0);
-    setMotorDutyCycle(MOTOR_RIGHT, 0);
+    motorSoftStop();
+    uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
 }
 
 void demoLineSense() {
