@@ -14,16 +14,16 @@ float minDutyCycle;
 float maxDutyCycle;
 float currentAngle = CLAW_OPEN_ANGLE;
 
-HAL_StatusTypeDef setServoAngle(float angle) {
+HAL_StatusTypeDef servoSetAngle(float angle) {
     if (angle < 0 || angle > 180) {
         uprintf("SERVO angle out of range (0-180), got: %f\n", angle);
         return HAL_ERROR;
     }
     currentAngle = angle;
-    return setServoDutyCycle(map(angle, 0, 180, minDutyCycle, maxDutyCycle));
+    return servoSetDutyCycle(map(angle, 0, 180, minDutyCycle, maxDutyCycle));
 }
 
-HAL_StatusTypeDef setServoDutyCycle(float dutyCycle) {
+HAL_StatusTypeDef servoSetDutyCycle(float dutyCycle) {
     if (dutyCycle < 0 || dutyCycle > 100) {
         uprintf("Invalid servo duty cycle: %f\n", dutyCycle);
         return HAL_ERROR;
@@ -34,7 +34,7 @@ HAL_StatusTypeDef setServoDutyCycle(float dutyCycle) {
     return HAL_OK;
 }
 
-float getServoAngle() {
+float servoGetAngle() {
     return currentAngle;
 }
 
@@ -47,5 +47,5 @@ HAL_StatusTypeDef servoInit() {
 
     HAL_TIM_PWM_Start(&SERVO_TIMER_HANDLE, TIM_CHANNEL_1);
     return HAL_OK;
-    // return setServoAngle(CLAW_OPEN_ANGLE);
+    // return servoSetAngle(CLAW_OPEN_ANGLE);
 }

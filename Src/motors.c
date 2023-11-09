@@ -22,7 +22,7 @@ HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle) {
     return HAL_OK;
 }
 
-void setMotorDir(Motor_E motor, MotorDirection_E dir) {
+void motorSetDir(Motor_E motor, MotorDirection_E dir) {
     if (motor == MOTOR_LEFT) {
         HAL_GPIO_WritePin(MOTOR_L_IN1_GPIO_Port, MOTOR_L_IN1_Pin, (dir & 0b10) >> 1);
         HAL_GPIO_WritePin(MOTOR_L_IN2_GPIO_Port, MOTOR_L_IN2_Pin, dir & 0b1);
@@ -34,9 +34,27 @@ void setMotorDir(Motor_E motor, MotorDirection_E dir) {
     }
 }
 
+void motorSetSpeed(Motor_E motor, float speed) {
+    if (speed < -100 || speed > 100) {
+        uprintf("Invalid speed: %f\n", speed);
+        return;
+    }
+
+    if (speed < 0) {
+        motorSetDir(motor, MOTOR_BWD);
+        speed = -speed;
+    } else if (speed > 0){
+        motorSetDir(motor, MOTOR_FWD);
+    } else {
+        motorSetDir(motor, MOTOR_STOP);
+    }
+
+    setMotorDutyCycle(motor, speed);
+}
+
 void motorSoftStop(){
-    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
-    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
+    motorSetDir(MOTOR_LEFT, MOTOR_STOP);
+    motorSetDir(MOTOR_RIGHT, MOTOR_STOP);
     // setMotorDutyCycle(motor, 0);
 }
 
@@ -44,8 +62,8 @@ HAL_StatusTypeDef motorsInit(void) {
     motorARR = __HAL_TIM_GET_AUTORELOAD(&MOTORS_TIMER_HANDLE);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_1);
     HAL_TIM_PWM_Start(&MOTORS_TIMER_HANDLE, TIM_CHANNEL_2);
-    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
-    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
+    motorSetDir(MOTOR_LEFT, MOTOR_STOP);
+    motorSetDir(MOTOR_RIGHT, MOTOR_STOP);
     setMotorDutyCycle(MOTOR_LEFT, 0);
     setMotorDutyCycle(MOTOR_RIGHT, 0);
     return HAL_OK;
