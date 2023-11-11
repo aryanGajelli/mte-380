@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #include "FreeRTOS.h"
@@ -5,61 +6,57 @@
 #include "color_sensor.h"
 #include "debug.h"
 #include "demo.h"
+#include "encoders.h"
 #include "imu.h"
 #include "main.h"
 #include "mathUtils.h"
 #include "motors.h"
 #include "sensors.h"
 #include "servo.h"
-#include "encoders.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
 #include "task.h"
-#include <math.h>
+
+HAL_StatusTypeDef mainTaskInit();
 
 void mainTask(void *pvParameters) {
     uprintf("mainTask\n");
-    servoInit();
 
-    motorsInit();
-    encodersInit();
-    colorSensorInit();
-    if (ICMInit() != HAL_OK) {
-        uprintf("ICMInit failed\n");
+    if (mainTaskInit() != HAL_OK) {
+        uprintf("mainTaskInit failed\n");
         Error_Handler();
-
     }
-    // motorSetSpeed(MOTOR_LEFT, 100);
-    // motorSetSpeed(MOTOR_RIGHT, 100);
-    // uint32_t start = HAL_GetTick();
-    // uint32_t deltaT_ms = HAL_GetTick();
-    // // motorSetSpeed(MOTOR_RIGHT, -100);
-    // // HAL_Delay(1000);
-    // // motorSoftStop(MOTOR_LEFT);
-    Encoder_T *encoderLeft = encoder_getInstance(ENCODER_LEFT);
-    Encoder_T *encoderRight = encoder_getInstance(ENCODER_RIGHT);
 
-    // p controller
-    // float Kp = -0.1;
-    // float Kd = 2.85;
-    // int32_t target = -25000;
-    // float error = 0;
-    // float prevError = 0;
-
-    while (1){
-        // ICM_Read(&imuData);
-        // uprintf("accel: %f %f %f\n", imuData.accel.x, imuData.accel.y, imuData.accel.z);
-        // uprintf("gyro: %f %f %f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
-        // uprintf("mag: %f %f %f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z);
-        // error = target - encoderLeft->position;
-        // float dutyCycle = Kp * error + Kd * (error - prevError);
-        // if (dutyCycle > 100) dutyCycle = 100;
-        // if (dutyCycle < -100) dutyCycle = -100;
-        // motorSetSpeed(MOTOR_RIGHT, dutyCycle);
-        // prevError = error;
-        encoderUpdate(encoderLeft);
-        encoderUpdate(encoderRight);
-        uprintf("l: %ld %.3f r: %ld %.3f\n",encoderLeft->position, encoderLeft->velocity, encoderRight->position, encoderRight->velocity);
+    while (1) {
         vTaskDelay(10);
     }
+}
+
+HAL_StatusTypeDef mainTaskInit() {
+    if (ICMInit() != HAL_OK) {
+        uprintf("ICMInit failed\n");
+        return HAL_ERROR;
+    }
+
+    if (colorSensorInit() != HAL_OK) {
+        uprintf("colorSensorInit failed\n");
+        return HAL_ERROR;
+    }
+
+    if (motorsInit() != HAL_OK) {
+        uprintf("motorsInit failed\n");
+        return HAL_ERROR;
+    }
+
+    if (servoInit() != HAL_OK) {
+        uprintf("servoInit failed\n");
+        return HAL_ERROR;
+    }    
+
+    if (encodersInit() != HAL_OK) {
+        uprintf("encodersInit failed\n");
+        return HAL_ERROR;
+    }    
+
+    return HAL_OK;
 }
