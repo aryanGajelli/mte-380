@@ -28,10 +28,8 @@ typedef enum {
     COLOR_3
 } ColorSensor_E;
 
-extern volatile uint16_t gu16_TIM2_OVC;
-extern volatile ColorFreq_T colorFreqs[4];
-void colorSensorInit();
-int32_t getFreq();
+HAL_StatusTypeDef colorSensorInit();
+int32_t colorGetFreq();
 HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs);
 float getLineError();
 char* colorToStr(Color_E color);

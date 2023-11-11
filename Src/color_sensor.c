@@ -6,8 +6,6 @@
 
 uint32_t F_CLK;
 
-volatile uint16_t gu16_TIM2_OVC = 0;
-
 const uint32_t redLow = 2200;
 const uint32_t redHigh = 80500;
 
@@ -20,8 +18,6 @@ const uint32_t clearHigh = 47500;
 const uint32_t blueLow = 5600;
 const uint32_t blueHigh = 170000;
 
-uint32_t gu32_Freq = 0;
-
 #define COLOR_1_EN() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_RESET)
 #define COLOR_1_DIS() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_SET)
 
@@ -32,22 +28,23 @@ uint32_t gu32_Freq = 0;
 #define COLOR_3_DIS() HAL_GPIO_WritePin(COLOR_3_CS_GPIO_Port, COLOR_3_CS_Pin, GPIO_PIN_SET)
 
 volatile uint8_t isFirstCaptured = 0;
-volatile uint32_t gu32_Ticks = 0;
+volatile uint32_t colorSensorPeriod = 0;
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
     if (htim->Instance == COLOR_TIMER_INSTANCE) {
-        static volatile uint32_t gu32_T1 = 0;
-        static volatile uint32_t gu32_T2 = 0;
+        static volatile uint32_t colorSensor_T1 = 0;
+        static volatile uint32_t colorSensor_T2 = 0;
+        uint32_t arr = __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
         if (isFirstCaptured == 0) {
-            gu32_T1 = COLOR_TIMER_INSTANCE->CCR1;
+            colorSensor_T1 = COLOR_TIMER_INSTANCE->CCR1;
             isFirstCaptured = 1;
 
         } else {
-            gu32_T2 = COLOR_TIMER_INSTANCE->CCR1;
+            colorSensor_T2 = COLOR_TIMER_INSTANCE->CCR1;
 
-            if (gu32_T2 > gu32_T1) {
-                gu32_Ticks = gu32_T2 - gu32_T1;
+            if (colorSensor_T2 > colorSensor_T1) {
+                colorSensorPeriod = colorSensor_T2 - colorSensor_T1;
             } else {
-                gu32_Ticks = (0xFFFF - gu32_T1) + gu32_T2;
+                colorSensorPeriod = (arr - colorSensor_T1) + colorSensor_T2;
             }
 
             __HAL_TIM_SET_COUNTER(&COLOR_TIMER_HANDLE, 0);
@@ -61,14 +58,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 /**
  * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
  */
-int32_t getFreq() {
+int32_t colorGetFreq() {
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-        ;
-    return F_CLK / gu32_Ticks;
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY) {
+        vTaskDelay(10);
+    }
+    return F_CLK / colorSensorPeriod;
 }
 
-void setColorSensorFreqScaling(FreqScale_E freqScale) {
+void colorSetFreqScaling(FreqScale_E freqScale) {
     HAL_GPIO_WritePin(COLOR_S0_GPIO_Port, COLOR_S0_GPIO_Port, (freqScale & 0b10) >> 1);
     HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
 }
@@ -96,16 +94,23 @@ void setColor(Color_E color) {
     HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
 }
 
-void colorSensorInit() {
+HAL_StatusTypeDef colorSensorInit() {
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
-
+    
     F_CLK = HAL_RCC_GetSysClockFreq();
-    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1);
-    setColorSensorFreqScaling(FREQ_SCALE_20);
-    setColor(BLUE);
+    
+    if (HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1) != HAL_OK) {
+        return HAL_ERROR;
+    }
+    if (HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    colorSetFreqScaling(FREQ_SCALE_20);
+    setColor(GREEN);
+    return HAL_OK;
 }
 
 /**
@@ -138,10 +143,10 @@ float getLineError() {
     static const float WEIGHTS[3] = {0.5, 1, 0.5};
     float error = 0;
     selectColorSensor(COLOR_1);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[0];
+    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[0];
     selectColorSensor(COLOR_2);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[1];
+    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[1];
     selectColorSensor(COLOR_3);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[2];
+    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[2];
     return error;
 }

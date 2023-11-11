@@ -194,6 +194,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == ENCODER_TIMER_RIGHT_INSTANCE) {
     encoderHandleOverflow(ENCODER_RIGHT, htim);
   }
+
+  if (htim->Instance == COLOR_TIMER_INSTANCE) {
+    // for some reason we need it to be a function call not jsut static assignment
+    volatile char a = HAL_GetTickFreq(); // god knows why this line is needed. Without it, the color sensors don't work
+  }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
     HAL_IncTick();
