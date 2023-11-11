@@ -11,7 +11,6 @@ typedef enum {
 typedef struct Encoder_T {
     float velocity;
     int32_t position;
-    uint32_t lastPosition;
     int32_t overflow;
     Encoder_E encoderSide;
 } Encoder_T;

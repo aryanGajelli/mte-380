@@ -10,19 +10,16 @@ volatile Encoder_T encoderRight;
 
 void encoderUpdate(Encoder_T *encoder) {
     TIM_HandleTypeDef *htim;
-    if (encoder == &encoderLeft){
+    if (encoder == &encoderLeft)
         htim = &ENCODER_TIMER_LEFT_HANDLE;
-    }
-    else if (encoder == &encoderRight){
+    else if (encoder == &encoderRight)
         htim = &ENCODER_TIMER_RIGHT_HANDLE;
-    }
-    else {
+    else
         Error_Handler();
-    }
 
-    uint32_t temp_counter = __HAL_TIM_GET_COUNTER(htim);
-    uint32_t temp_arr = __HAL_TIM_GET_AUTORELOAD(htim);
-    encoder->position = temp_counter + encoder->overflow * temp_arr;
+    uint32_t counter = __HAL_TIM_GET_COUNTER(htim);
+    uint32_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
+    encoder->position = counter + encoder->overflow * arr;
 }
 
 void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim) {
@@ -35,19 +32,16 @@ void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim) {
 
 HAL_StatusTypeDef encodersInit(void) {
     // reset encoder structs
-    encoderLeft = (Encoder_T){0, 0, 0, 0, ENCODER_LEFT};
-    encoderRight = (Encoder_T){0, 0, 0, 0, ENCODER_RIGHT};
-    // enable the encoder interrupts to update count and overflow
-    __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_CC1);
+    encoderLeft = (Encoder_T){0, 0, 0, ENCODER_LEFT};
+    encoderRight = (Encoder_T){0, 0, 0, ENCODER_RIGHT};
+    // enable the encoder interrupts to handle overflow
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_UPDATE);
-
-    __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_CC1);
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_UPDATE);
 
-    if (HAL_TIM_Encoder_Start_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
+    if (HAL_TIM_Encoder_Start(&ENCODER_TIMER_LEFT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
         return HAL_ERROR;
     }
-    if (HAL_TIM_Encoder_Start_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
+    if (HAL_TIM_Encoder_Start(&ENCODER_TIMER_RIGHT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
         return HAL_ERROR;
     }
     return HAL_OK;
