@@ -32,6 +32,7 @@
 #include "backtrace.h"
 #include "debug.h"
 #include "bsp.h"
+#include "encoders.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -187,13 +188,18 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-
+  if (htim->Instance == ENCODER_TIMER_LEFT_INSTANCE) {
+    encoderHandleOverflow(ENCODER_LEFT, htim);
+  }
+  if (htim->Instance == ENCODER_TIMER_RIGHT_INSTANCE) {
+    encoderHandleOverflow(ENCODER_RIGHT, htim);
+  }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-
+  
   /* USER CODE END Callback 1 */
 }
 

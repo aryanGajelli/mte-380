@@ -92,8 +92,6 @@ void Error_Handler(void);
 #define COLOR_S1_GPIO_Port GPIOB
 #define COLOR_S2_Pin GPIO_PIN_15
 #define COLOR_S2_GPIO_Port GPIOB
-#define IMU_CS_Pin GPIO_PIN_10
-#define IMU_CS_GPIO_Port GPIOA
 #define COLOR_2_CS_Pin GPIO_PIN_11
 #define COLOR_2_CS_GPIO_Port GPIOA
 #define COLOR_1_CS_Pin GPIO_PIN_12
@@ -104,6 +102,8 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define MOTOR_R_IN4_Pin GPIO_PIN_10
 #define MOTOR_R_IN4_GPIO_Port GPIOC
+#define IMU_CS_Pin GPIO_PIN_11
+#define IMU_CS_GPIO_Port GPIOC
 #define MOTOR_R_IN3_Pin GPIO_PIN_12
 #define MOTOR_R_IN3_GPIO_Port GPIOC
 #define SWO_Pin GPIO_PIN_3

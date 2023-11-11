@@ -18,7 +18,9 @@ int _write(int file, char *data, int len) {
 }
 
 QueueHandle_t printQueue;
+char isDebugInitialized = 0;
 HAL_StatusTypeDef debugInit(void) {
+    isDebugInitialized = 1;
     printQueue = xQueueCreate(PRINT_QUEUE_LENGTH, PRINT_QUEUE_STRING_SIZE);
     if (!printQueue) {
         return HAL_ERROR;

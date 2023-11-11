@@ -6,8 +6,8 @@
 #define CLAW_OPEN_ANGLE 30
 #define CLAW_CLOSED_ANGLE 140
 
-HAL_StatusTypeDef setServoAngle(float angle);
-HAL_StatusTypeDef setServoDutyCycle(float dutyCycle);
-float getServoAngle();
+HAL_StatusTypeDef servoSetAngle(float angle);
+HAL_StatusTypeDef servoSetDutyCycle(float dutyCycle);
+float servoGetAngle();
 HAL_StatusTypeDef servoInit();
 #endif  // __SERVO_H__

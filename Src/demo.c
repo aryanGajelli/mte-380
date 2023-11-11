@@ -2,17 +2,14 @@
 
 #include <math.h>
 
+#include "FreeRTOS.h"
 #include "bsp.h"
 #include "color_sensor.h"
 #include "debug.h"
 #include "motors.h"
 #include "sensors.h"
 #include "stm32f4xx_hal.h"
-#include "FreeRTOS.h"
 #include "task.h"
-
-
-
 
 DemoState_T demoStates[] = {
     {DEMO_INIT, demoInit},
@@ -51,13 +48,13 @@ DemoStates_E getDemoState() {
     return demoState;
 }
 
-void demoStateMachine(){
+void demoStateMachine() {
     DemoStates_E prevState = demoState;
-    while (1){
-        if (demoState != prevState){
+    while (1) {
+        if (demoState != prevState) {
             uprintf("calling from: %d -> %d\n", prevState, demoState);
             prevState = demoState;
-            demoStates[demoState].demoFunc();            
+            demoStates[demoState].demoFunc();
         }
         vTaskDelay(10);
     }
@@ -65,48 +62,48 @@ void demoStateMachine(){
 
 void demoInit() {
     uprintf("demoInit\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
-    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
+    motorSetDir(MOTOR_LEFT, MOTOR_STOP);
+    motorSetDir(MOTOR_RIGHT, MOTOR_STOP);
     setMotorDutyCycle(MOTOR_LEFT, 0);
     setMotorDutyCycle(MOTOR_RIGHT, 0);
 }
 
 void demoEnd() {
     uprintf("demoEnd\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_STOP);
-    setMotorDir(MOTOR_RIGHT, MOTOR_STOP);
+    motorSetDir(MOTOR_LEFT, MOTOR_STOP);
+    motorSetDir(MOTOR_RIGHT, MOTOR_STOP);
     setMotorDutyCycle(MOTOR_LEFT, 0);
     setMotorDutyCycle(MOTOR_RIGHT, 0);
 }
 
 void demoFwd() {
     uprintf("demoFwd\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_FWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
+    motorSetDir(MOTOR_LEFT, MOTOR_FWD);
+    motorSetDir(MOTOR_RIGHT, MOTOR_FWD);
     setMotorDutyCycle(MOTOR_LEFT, 100);
     setMotorDutyCycle(MOTOR_RIGHT, 100);
 }
 
 void demoBwd() {
     uprintf("demoBwd\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_BWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_BWD);
+    motorSetDir(MOTOR_LEFT, MOTOR_BWD);
+    motorSetDir(MOTOR_RIGHT, MOTOR_BWD);
     setMotorDutyCycle(MOTOR_LEFT, 100);
     setMotorDutyCycle(MOTOR_RIGHT, 100);
 }
 
 void demoLeft() {
     uprintf("demoLeft\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_BWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
+    motorSetDir(MOTOR_LEFT, MOTOR_BWD);
+    motorSetDir(MOTOR_RIGHT, MOTOR_FWD);
     setMotorDutyCycle(MOTOR_LEFT, 100);
     setMotorDutyCycle(MOTOR_RIGHT, 100);
 }
 
 void demoRight() {
     uprintf("demoRight\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_FWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_BWD);
+    motorSetDir(MOTOR_LEFT, MOTOR_FWD);
+    motorSetDir(MOTOR_RIGHT, MOTOR_BWD);
     setMotorDutyCycle(MOTOR_LEFT, 100);
     setMotorDutyCycle(MOTOR_RIGHT, 100);
 }
@@ -114,12 +111,12 @@ void demoRight() {
 void demoDistSense() {
     // drive forward until distance sensor detects something
     uprintf("demoDistSense\n");
-    setMotorDir(MOTOR_LEFT, MOTOR_FWD);
-    setMotorDir(MOTOR_RIGHT, MOTOR_FWD);
-    setMotorDutyCycle(MOTOR_LEFT, 5);
-    setMotorDutyCycle(MOTOR_RIGHT, 5);
-    while (ADC_to_Volt(adcBuf[0]) < .7) {
-        uprintf("dist: %lf\n", ADC_to_Volt(adcBuf[0]));
+    motorSetDir(MOTOR_LEFT, MOTOR_FWD);
+    motorSetDir(MOTOR_RIGHT, MOTOR_FWD);
+    setMotorDutyCycle(MOTOR_LEFT, 100);
+    setMotorDutyCycle(MOTOR_RIGHT, 100);
+    while (ADC_to_Volt(adcBuf[0]) < .6) {
+        uprintf("dist l: %lf\n", ADC_to_Volt(adcBuf[0]));
         vTaskDelay(50);
     }
     motorSoftStop();
@@ -140,8 +137,8 @@ void demoLineSense() {
         float dutyCycle = Kp * error + Kd * (error - prevError);
         prevError = error;
 
-        setMotorDir(MOTOR_LEFT, dutyCycle > 0 ? MOTOR_FWD : MOTOR_BWD);
-        setMotorDir(MOTOR_RIGHT, dutyCycle > 0 ? MOTOR_BWD : MOTOR_FWD);
+        motorSetDir(MOTOR_LEFT, dutyCycle > 0 ? MOTOR_FWD : MOTOR_BWD);
+        motorSetDir(MOTOR_RIGHT, dutyCycle > 0 ? MOTOR_BWD : MOTOR_FWD);
         setMotorDutyCycle(MOTOR_LEFT, fabs(dutyCycle));
         setMotorDutyCycle(MOTOR_RIGHT, fabs(dutyCycle));
         vTaskDelay(1);

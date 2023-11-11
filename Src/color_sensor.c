@@ -138,10 +138,10 @@ float getLineError() {
     static const float WEIGHTS[3] = {0.5, 1, 0.5};
     float error = 0;
     selectColorSensor(COLOR_1);
-    error += (LINE_FREQ - getFreq(COLOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
+    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[0];
     selectColorSensor(COLOR_2);
-    error += (LINE_FREQ - getFreq(COLOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
+    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[1];
     selectColorSensor(COLOR_3);
-    error += (LINE_FREQ - getFreq(COLOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
+    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[2];
     return error;
 }
