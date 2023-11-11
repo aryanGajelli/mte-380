@@ -16,12 +16,8 @@ typedef struct Encoder_T {
     Encoder_E encoderSide;
 } Encoder_T;
 
-char isEncodersInitialized();
-void update_encoder(Encoder_E encoderSide);
-#define IC_SIZE 5
-extern int32_t encoderLeftVelocity;
-extern uint16_t IC1[IC_SIZE];
-extern uint16_t IC2[IC_SIZE];
+void encoderUpdate(Encoder_T *encoder);
+void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim);
 
 HAL_StatusTypeDef encodersInit(void);
 Encoder_T* encoder_getInstance(Encoder_E encoder);

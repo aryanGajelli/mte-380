@@ -3,7 +3,6 @@
 #include "bsp.h"
 #include "debug.h"
 #include "stm32f4xx_hal.h"
-#include "encoders.h"
 
 uint32_t F_CLK;
 
@@ -35,9 +34,6 @@ uint32_t gu32_Freq = 0;
 volatile uint8_t isFirstCaptured = 0;
 volatile uint32_t gu32_Ticks = 0;
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim->Instance == ENCODER_TIMER_LEFT_INSTANCE){
-        update_encoder(ENCODER_LEFT);
-    }
     if (htim->Instance == COLOR_TIMER_INSTANCE) {
         static volatile uint32_t gu32_T1 = 0;
         static volatile uint32_t gu32_T2 = 0;

@@ -24,11 +24,11 @@ void mainTask(void *pvParameters) {
     motorsInit();
     encodersInit();
     colorSensorInit();
-    // if (ICMInit() != HAL_OK) {
-    //     uprintf("ICMInit failed\n");
-    //     Error_Handler();
+    if (ICMInit() != HAL_OK) {
+        uprintf("ICMInit failed\n");
+        Error_Handler();
 
-    // }
+    }
     // motorSetSpeed(MOTOR_LEFT, 100);
     // motorSetSpeed(MOTOR_RIGHT, 100);
     // uint32_t start = HAL_GetTick();
@@ -36,7 +36,8 @@ void mainTask(void *pvParameters) {
     // // motorSetSpeed(MOTOR_RIGHT, -100);
     // // HAL_Delay(1000);
     // // motorSoftStop(MOTOR_LEFT);
-    // Encoder_T *encoderLeft = encoder_getInstance(ENCODER_LEFT);
+    Encoder_T *encoderLeft = encoder_getInstance(ENCODER_LEFT);
+    Encoder_T *encoderRight = encoder_getInstance(ENCODER_RIGHT);
 
     // p controller
     // float Kp = -0.1;
@@ -45,7 +46,6 @@ void mainTask(void *pvParameters) {
     // float error = 0;
     // float prevError = 0;
 
-    IMUData_t imuData;
     while (1){
         // ICM_Read(&imuData);
         // uprintf("accel: %f %f %f\n", imuData.accel.x, imuData.accel.y, imuData.accel.z);
@@ -57,7 +57,9 @@ void mainTask(void *pvParameters) {
         // if (dutyCycle < -100) dutyCycle = -100;
         // motorSetSpeed(MOTOR_RIGHT, dutyCycle);
         // prevError = error;
-        uprintf("pos: %ld\n",encoderLeft->position);
+        encoderUpdate(encoderLeft);
+        encoderUpdate(encoderRight);
+        uprintf("l: %ld r: %ld\n",encoderLeft->position, encoderRight->position);
         vTaskDelay(10);
     }
 }

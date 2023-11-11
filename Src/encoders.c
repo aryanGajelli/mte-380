@@ -7,45 +7,49 @@
 
 volatile Encoder_T encoderLeft;
 volatile Encoder_T encoderRight;
-int32_t encoderLeftVelocity;
 
-void update_encoder(Encoder_E encoderSide) {
+void encoderUpdate(Encoder_T *encoder) {
     TIM_HandleTypeDef *htim;
-    Encoder_T *encoder = encoder_getInstance(encoderSide);
-
-    if (encoderSide == ENCODER_LEFT) {
+    if (encoder == &encoderLeft){
         htim = &ENCODER_TIMER_LEFT_HANDLE;
-    } else if (encoderSide == ENCODER_RIGHT) {
+    }
+    else if (encoder == &encoderRight){
         htim = &ENCODER_TIMER_RIGHT_HANDLE;
-    } else {
+    }
+    else {
         Error_Handler();
     }
 
     uint32_t temp_counter = __HAL_TIM_GET_COUNTER(htim);
     uint32_t temp_arr = __HAL_TIM_GET_AUTORELOAD(htim);
     encoder->position = temp_counter + encoder->overflow * temp_arr;
-
 }
 
-uint16_t IC1[IC_SIZE];
-uint16_t IC2[IC_SIZE];
+void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim) {
+    Encoder_T *encoder = encoder_getInstance(encoderSide);
+
+    uint32_t counter = __HAL_TIM_GET_COUNTER(htim);
+    uint32_t cc2 = __HAL_TIM_GET_COMPARE(htim, TIM_CHANNEL_2);
+    encoder->overflow += (cc2 > counter) - (cc2 < counter);
+}
+
 HAL_StatusTypeDef encodersInit(void) {
-    encoderLeft.overflow = 0;
-    encoderLeft.position = 0;
-    encoderLeft.lastPosition = 0;
-    encoderLeft.velocity = 0;
-    encoderLeft.encoderSide = ENCODER_LEFT;
+    // reset encoder structs
+    encoderLeft = (Encoder_T){0, 0, 0, 0, ENCODER_LEFT};
+    encoderRight = (Encoder_T){0, 0, 0, 0, ENCODER_RIGHT};
+    // enable the encoder interrupts to update count and overflow
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_CC1);
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_UPDATE);
-    // __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_TRIGGER);
-    // __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_CC2);
-    // __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_COM);
+
+    __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_CC1);
+    __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_UPDATE);
+
     if (HAL_TIM_Encoder_Start_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
         return HAL_ERROR;
     }
-    // if (HAL_TIM_Encoder_Start_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
-    //     return HAL_ERROR;
-    // }
+    if (HAL_TIM_Encoder_Start_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
+        return HAL_ERROR;
+    }
     return HAL_OK;
 }
 
