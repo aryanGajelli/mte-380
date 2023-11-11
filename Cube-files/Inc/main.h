@@ -68,8 +68,6 @@ void Error_Handler(void);
 #define IMU_MISO_GPIO_Port GPIOC
 #define IMU_MOSI_Pin GPIO_PIN_3
 #define IMU_MOSI_GPIO_Port GPIOC
-#define MOTOR_L_EN_Pin GPIO_PIN_0
-#define MOTOR_L_EN_GPIO_Port GPIOA
 #define MOTOR_R_EN_Pin GPIO_PIN_1
 #define MOTOR_R_EN_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
@@ -102,6 +100,8 @@ void Error_Handler(void);
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
+#define MOTOR_L_EN_Pin GPIO_PIN_15
+#define MOTOR_L_EN_GPIO_Port GPIOA
 #define MOTOR_R_IN4_Pin GPIO_PIN_10
 #define MOTOR_R_IN4_GPIO_Port GPIOC
 #define MOTOR_R_IN3_Pin GPIO_PIN_12

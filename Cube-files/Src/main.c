@@ -188,15 +188,18 @@ void SystemClock_Config(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-
+  if (htim->Instance == ENCODER_TIMER_LEFT_INSTANCE) {
+    if (__HAL_TIM_IS_TIM_COUNTING_DOWN(htim))
+      encoderLeftVelocity -= __HAL_TIM_GET_COUNTER(&ENCODER_TIMER_LEFT_HANDLE);
+    else
+      encoderLeftVelocity += __HAL_TIM_GET_COUNTER(&ENCODER_TIMER_LEFT_HANDLE);
+  }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == ENCODER_TIMER_LEFT_INSTANCE) {
-    update_encoder(ENCODER_LEFT);
-  }
+  
   /* USER CODE END Callback 1 */
 }
 

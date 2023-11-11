@@ -1,6 +1,7 @@
 #include "userInit.h"
 #include "debug.h"
 #include "sensors.h"
+#include "encoders.h"
 #include "bsp.h"
 
 void userInit(void) {
@@ -13,6 +14,9 @@ void userInit(void) {
         Error_Handler();
     }
 
+    // if (encodersInit() != HAL_OK) {
+    //     Error_Handler();
+    // }
 
     printf("----------------------------------\nFinished User Init\n");
     

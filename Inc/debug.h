@@ -14,12 +14,12 @@
 #define PRINT_QUEUE_SEND_TIMEOUT_TICKS 10
 
 extern QueueHandle_t printQueue;
-
+extern char isDebugInitialized;
 HAL_StatusTypeDef debugInit(void);
 
 #define uprintf(...)                                                 \
     do {                                                             \
-        if (!printQueue) {                                           \
+        if (!printQueue || !isDebugInitialized) {                    \
             Error_Handler();                                         \
         }                                                            \
         char buf[PRINT_QUEUE_STRING_SIZE] = {0};                     \
@@ -29,7 +29,7 @@ HAL_StatusTypeDef debugInit(void);
 
 #define uprintfISR(...)                                      \
     do {                                                     \
-        if (!printQueue) {                                   \
+        if (!printQueue || !isDebugInitialized) {            \
             Error_Handler();                                 \
         }                                                    \
         char buf[PRINT_QUEUE_STRING_SIZE] = {0};             \

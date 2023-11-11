@@ -10,12 +10,14 @@ typedef enum {
 
 typedef struct Encoder_T {
     int32_t velocity;
-    int64_t position;
+    int32_t position;
     uint32_t lastCount;
     Encoder_E encoderSide;
 } Encoder_T;
 
 void update_encoder(Encoder_E encoderSide);
+
+extern int32_t encoderLeftVelocity;
 
 HAL_StatusTypeDef encodersInit(void);
 Encoder_T* encoder_getInstance(Encoder_E encoder);
