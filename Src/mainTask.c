@@ -25,10 +25,8 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
-    selectColorSensor(COLOR_2);
     while (1) {
-        
-        uprintf("Freq 1: %d\n", colorGetFreq());
+        uprintf("Freq 1: %d\n", colorGetFreq(COLOR_2));
         vTaskDelay(10);
     }
 }

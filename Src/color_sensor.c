@@ -58,11 +58,11 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
 /**
  * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
  */
-int32_t colorGetFreq() {
+uint32_t colorGetFreq(ColorSensor_E sensor) {
+    colorSelectSensor(sensor);
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY) {
-        vTaskDelay(10);
-    }
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
     return F_CLK / colorSensorPeriod;
 }
 
@@ -71,25 +71,7 @@ void colorSetFreqScaling(FreqScale_E freqScale) {
     HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
 }
 
-char* colorToStr(Color_E color) {
-    switch (color) {
-        case RED:
-            return "RED";
-            break;
-        case GREEN:
-            return "GRN";
-            break;
-        case BLUE:
-            return "BLU";
-            break;
-        case CLEAR:
-            return "CLR";
-            break;
-    }
-    return "";
-}
-
-void setColor(Color_E color) {
+void colorSet(Color_E color) {
     HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
     HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
 }
@@ -98,9 +80,9 @@ HAL_StatusTypeDef colorSensorInit() {
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
-    
+
     F_CLK = HAL_RCC_GetSysClockFreq();
-    
+
     if (HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1) != HAL_OK) {
         return HAL_ERROR;
     }
@@ -109,19 +91,24 @@ HAL_StatusTypeDef colorSensorInit() {
     }
 
     colorSetFreqScaling(FREQ_SCALE_20);
-    setColor(GREEN);
+    colorSet(GREEN);
     return HAL_OK;
 }
 
 /**
  * @brief Garauntees that only 1 sensor will be selected at once.
  */
-HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs) {
+HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
+    static ColorSensor_E prevSensor = COLOR_ERROR;
+    if (prevSensor == sensor) {
+        return HAL_OK;
+    }
+    prevSensor = sensor;
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
 
-    switch (cs) {
+    switch (sensor) {
         case COLOR_1:
             COLOR_1_EN();
             return HAL_OK;
@@ -142,11 +129,8 @@ float getLineError() {
     static const int32_t LINE_FREQ = 110000;
     static const float WEIGHTS[3] = {0.5, 1, 0.5};
     float error = 0;
-    selectColorSensor(COLOR_1);
-    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[0];
-    selectColorSensor(COLOR_2);
-    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[1];
-    selectColorSensor(COLOR_3);
-    error += (LINE_FREQ - colorGetFreq() + NO_LINE_FREQ) * WEIGHTS[2];
+    error += (LINE_FREQ - colorGetFreq(COLOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
+    error += (LINE_FREQ - colorGetFreq(COLOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
+    error += (LINE_FREQ - colorGetFreq(COLOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
     return error;
 }
