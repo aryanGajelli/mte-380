@@ -23,10 +23,10 @@ typedef struct ColorFreq_T {
 } ColorFreq_T;
 
 typedef enum {
-    COLOR_1,
-    COLOR_2,
-    COLOR_3,
-    COLOR_ERROR
+    COLOR_SENSOR_1,
+    COLOR_SENSOR_2,
+    COLOR_SENSOR_3,
+    COLOR_SENSOR_ERROR
 } ColorSensor_E;
 
 HAL_StatusTypeDef colorSensorInit();

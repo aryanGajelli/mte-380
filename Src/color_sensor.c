@@ -60,10 +60,16 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
  */
 uint32_t colorGetFreq(ColorSensor_E sensor) {
     colorSelectSensor(sensor);
-    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-        ;
-    return F_CLK / colorSensorPeriod;
+    uint32_t accumaltedPeriod = 0;
+    #define NUM_SAMPLES 15
+    for (uint8_t i = 0; i < NUM_SAMPLES; i++) {
+        HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
+        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+            ;
+        accumaltedPeriod += colorSensorPeriod;
+    }
+
+    return NUM_SAMPLES * F_CLK / accumaltedPeriod;
 }
 
 void colorSetFreqScaling(FreqScale_E freqScale) {
@@ -99,23 +105,24 @@ HAL_StatusTypeDef colorSensorInit() {
  * @brief Garauntees that only 1 sensor will be selected at once.
  */
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
-    static ColorSensor_E prevSensor = COLOR_ERROR;
+    static ColorSensor_E prevSensor = COLOR_SENSOR_ERROR;
     if (prevSensor == sensor) {
         return HAL_OK;
     }
     prevSensor = sensor;
+
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
 
     switch (sensor) {
-        case COLOR_1:
+        case COLOR_SENSOR_1:
             COLOR_1_EN();
             return HAL_OK;
-        case COLOR_2:
+        case COLOR_SENSOR_2:
             COLOR_2_EN();
             return HAL_OK;
-        case COLOR_3:
+        case COLOR_SENSOR_3:
             COLOR_3_EN();
             return HAL_OK;
         default:
@@ -129,8 +136,8 @@ float getLineError() {
     static const int32_t LINE_FREQ = 110000;
     static const float WEIGHTS[3] = {0.5, 1, 0.5};
     float error = 0;
-    error += (LINE_FREQ - colorGetFreq(COLOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
-    error += (LINE_FREQ - colorGetFreq(COLOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
-    error += (LINE_FREQ - colorGetFreq(COLOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
+    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
+    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
+    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
     return error;
 }

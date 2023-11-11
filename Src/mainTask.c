@@ -26,8 +26,8 @@ void mainTask(void *pvParameters) {
         Error_Handler();
     }
     while (1) {
-        uprintf("Freq 1: %d\n", colorGetFreq(COLOR_2));
-        vTaskDelay(10);
+        uprintf("%lu\t%lu\t%lu\n", colorGetFreq(COLOR_SENSOR_1), colorGetFreq(COLOR_SENSOR_2), colorGetFreq(COLOR_SENSOR_3));
+        vTaskDelay(30);
     }
 }
 
