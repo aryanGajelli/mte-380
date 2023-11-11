@@ -59,7 +59,7 @@ void mainTask(void *pvParameters) {
         // prevError = error;
         encoderUpdate(encoderLeft);
         encoderUpdate(encoderRight);
-        uprintf("l: %ld r: %ld\n",encoderLeft->position, encoderRight->position);
+        uprintf("l: %ld %.3f r: %ld %.3f\n",encoderLeft->position, encoderLeft->velocity, encoderRight->position, encoderRight->velocity);
         vTaskDelay(10);
     }
 }
