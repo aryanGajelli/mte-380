@@ -18,5 +18,6 @@ HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle);
 void motorSetDir(Motor_E motor, MotorDirection_E dir);
 void motorSetSpeed(Motor_E motor, float speed);
 void motorSoftStop();
+void motorHardStop();
 HAL_StatusTypeDef motorsInit(void);
 #endif  // __MOTORS_H__

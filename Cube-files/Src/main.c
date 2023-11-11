@@ -189,10 +189,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
   if (htim->Instance == ENCODER_TIMER_LEFT_INSTANCE) {
-    if (__HAL_TIM_IS_TIM_COUNTING_DOWN(htim))
-      encoderLeftVelocity -= __HAL_TIM_GET_COUNTER(&ENCODER_TIMER_LEFT_HANDLE);
-    else
-      encoderLeftVelocity += __HAL_TIM_GET_COUNTER(&ENCODER_TIMER_LEFT_HANDLE);
+    Encoder_T *encoder = encoder_getInstance(ENCODER_LEFT);
+    uint32_t counter =  __HAL_TIM_GET_COUNTER(&ENCODER_TIMER_LEFT_HANDLE);
+    uint32_t cc2 = __HAL_TIM_GET_COMPARE(&ENCODER_TIMER_LEFT_HANDLE, TIM_CHANNEL_2);
+    encoder->overflow += (cc2 > counter) - (cc2 < counter);
   }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
