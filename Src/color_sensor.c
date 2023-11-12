@@ -2,25 +2,10 @@
 
 #include "bsp.h"
 #include "debug.h"
+#include "mathUtils.h"
 #include "stm32f4xx_hal.h"
 
 uint32_t F_CLK;
-
-volatile uint16_t gu16_TIM2_OVC = 0;
-
-const uint32_t redLow = 2200;
-const uint32_t redHigh = 80500;
-
-const uint32_t greenLow = 1000;
-const uint32_t greenHigh = 47500;
-
-const uint32_t clearLow = 700;
-const uint32_t clearHigh = 47500;
-
-const uint32_t blueLow = 5600;
-const uint32_t blueHigh = 170000;
-
-uint32_t gu32_Freq = 0;
 
 #define COLOR_1_EN() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_RESET)
 #define COLOR_1_DIS() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_SET)
@@ -32,22 +17,23 @@ uint32_t gu32_Freq = 0;
 #define COLOR_3_DIS() HAL_GPIO_WritePin(COLOR_3_CS_GPIO_Port, COLOR_3_CS_Pin, GPIO_PIN_SET)
 
 volatile uint8_t isFirstCaptured = 0;
-volatile uint32_t gu32_Ticks = 0;
+volatile uint32_t colorSensorPeriod = 0;
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
     if (htim->Instance == COLOR_TIMER_INSTANCE) {
-        static volatile uint32_t gu32_T1 = 0;
-        static volatile uint32_t gu32_T2 = 0;
+        static volatile uint32_t colorSensor_T1 = 0;
+        static volatile uint32_t colorSensor_T2 = 0;
+        uint32_t arr = __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
         if (isFirstCaptured == 0) {
-            gu32_T1 = COLOR_TIMER_INSTANCE->CCR1;
+            colorSensor_T1 = COLOR_TIMER_INSTANCE->CCR1;
             isFirstCaptured = 1;
 
         } else {
-            gu32_T2 = COLOR_TIMER_INSTANCE->CCR1;
+            colorSensor_T2 = COLOR_TIMER_INSTANCE->CCR1;
 
-            if (gu32_T2 > gu32_T1) {
-                gu32_Ticks = gu32_T2 - gu32_T1;
+            if (colorSensor_T2 > colorSensor_T1) {
+                colorSensorPeriod = colorSensor_T2 - colorSensor_T1;
             } else {
-                gu32_Ticks = (0xFFFF - gu32_T1) + gu32_T2;
+                colorSensorPeriod = (arr - colorSensor_T1) + colorSensor_T2;
             }
 
             __HAL_TIM_SET_COUNTER(&COLOR_TIMER_HANDLE, 0);
@@ -58,72 +44,73 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
     }
 }
 
-/**
- * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
- */
-int32_t getFreq() {
-    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-        ;
-    return F_CLK / gu32_Ticks;
-}
-
-void setColorSensorFreqScaling(FreqScale_E freqScale) {
-    HAL_GPIO_WritePin(COLOR_S0_GPIO_Port, COLOR_S0_GPIO_Port, (freqScale & 0b10) >> 1);
-    HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
-}
-
-char* colorToStr(Color_E color) {
-    switch (color) {
-        case RED:
-            return "RED";
-            break;
-        case GREEN:
-            return "GRN";
-            break;
-        case BLUE:
-            return "BLU";
-            break;
-        case CLEAR:
-            return "CLR";
-            break;
-    }
-    return "";
-}
-
-void setColor(Color_E color) {
-    HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
-    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
-}
-
-void colorSensorInit() {
+HAL_StatusTypeDef colorSensorInit() {
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
 
     F_CLK = HAL_RCC_GetSysClockFreq();
+
+    if (HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1) != HAL_OK) {
+        return HAL_ERROR;
+    }
+    if (HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE) != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    colorSetFreqScaling(FREQ_SCALE_20);
+    colorSet(GREEN);
+    return HAL_OK;
+}
+
+/**
+ * @brief Takes multiple samples of the period of the signal and inverts it based on F_CLK frequency
+ */
+uint32_t colorGetFreq(ColorSensor_E sensor) {
+    colorSelectSensor(sensor);
+    // Need to take 2 samples as first one is always junky when switching between sensors
     HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1);
-    setColorSensorFreqScaling(FREQ_SCALE_20);
-    setColor(BLUE);
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
+    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
+    return F_CLK / colorSensorPeriod;
+}
+
+void colorSetFreqScaling(FreqScale_E freqScale) {
+    HAL_GPIO_WritePin(COLOR_S0_GPIO_Port, COLOR_S0_GPIO_Port, (freqScale & 0b10) >> 1);
+    HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
+}
+
+void colorSet(Color_E color) {
+    HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
+    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
 }
 
 /**
  * @brief Garauntees that only 1 sensor will be selected at once.
+ * @param sensor The sensor to select.
  */
-HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs) {
+HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
+    static ColorSensor_E prevSensor = COLOR_SENSOR_ERROR;
+    if (prevSensor == sensor) {
+        return HAL_OK;
+    }
+    prevSensor = sensor;
+
     COLOR_1_DIS();
     COLOR_2_DIS();
     COLOR_3_DIS();
 
-    switch (cs) {
-        case COLOR_1:
+    switch (sensor) {
+        case COLOR_SENSOR_1:
             COLOR_1_EN();
             return HAL_OK;
-        case COLOR_2:
+        case COLOR_SENSOR_2:
             COLOR_2_EN();
             return HAL_OK;
-        case COLOR_3:
+        case COLOR_SENSOR_3:
             COLOR_3_EN();
             return HAL_OK;
         default:
@@ -131,17 +118,72 @@ HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs) {
     }
 }
 
-float getLineError() {
-    // dot product of the color vector and weight vector, middle being the highest weight
-    static const int32_t NO_LINE_FREQ = 30000;
-    static const int32_t LINE_FREQ = 110000;
-    static const float WEIGHTS[3] = {0.5, 1, 0.5};
-    float error = 0;
-    selectColorSensor(COLOR_1);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[0];
-    selectColorSensor(COLOR_2);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[1];
-    selectColorSensor(COLOR_3);
-    error += (LINE_FREQ - getFreq() + NO_LINE_FREQ) * WEIGHTS[2];
-    return error;
+/**
+ * @brief Normalizes the values of all 3 sensors to be between 0 and 1.
+ *        With 1 representing wood and 0 representing red tape.
+ * @param sensor The sensor to get the normalized value of.
+ */
+double colorGetNormalizedOut(ColorSensor_E sensor) {
+    static const uint32_t c1_wood = 49500, c2_wood = 66500, c3_wood = 44500;
+    static const uint32_t c1_tape = 30300, c2_tape = 35200, c3_tape = 26900;
+    uint32_t freq = colorGetFreq(sensor);
+    switch (sensor) {
+        case COLOR_SENSOR_1:
+            return map(freq, c1_tape, c1_wood, 0, 1);
+        case COLOR_SENSOR_2:
+            return map(freq, c2_tape, c2_wood, 0, 1);
+        case COLOR_SENSOR_3:
+            return map(freq, c3_tape, c3_wood, 0, 1);
+        default:
+            return -255;
+    }
+}
+
+/**
+ * @brief Returns the surface type based on the color sensor readings.
+ * @param c1 The normalized value of color sensor 1.
+ * @param c2 The normalized value of color sensor 2.
+ * @param c3 The normalized value of color sensor 3.
+ */
+SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
+    static const double WOOD_THRESHOLD = 0.95;
+    static const double BLACK_THRESHOLD = -0.6;
+    // if 2 sensors are above the wood threshold, then we are on wood
+    if (c1 > WOOD_THRESHOLD && c2 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+    if (c1 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+    if (c2 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+
+    // if 2 sensors are below the black threshold, then we are on black tape
+    if (c1 < BLACK_THRESHOLD && c2 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
+    if (c1 < BLACK_THRESHOLD && c3 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
+    if (c2 < BLACK_THRESHOLD && c3 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
+    return SURFACE_TAPE;
+}
+
+/**
+ * @brief Returns a weighted average of the 3 sensors.
+ *        If the average of the 3 sensors is above a wood threshold, then the average is added to the weighted average.
+ *        This is to prevent the robot from thinking it is on wood when it is on red tape.
+ *        See https://theultimatelinefollower.blogspot.com/2015/12/interpolation.html
+ */
+SurfaceType_E colorGetLineDeviation(double* out) {
+    // measured sensor displacements from center of robot
+    static const double sensorLocs_mm[3] = {15, 0, -17.95};
+
+    double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
+    double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
+    double c3 = colorGetNormalizedOut(COLOR_SENSOR_3);
+
+    double num = sensorLocs_mm[0] * c3 + sensorLocs_mm[1] * c2 + sensorLocs_mm[2] * c1;
+    double denom = c1 + c2 + c3;
+
+    *out = num / denom + sensorLocs_mm[1];
+
+    return colorDetectSurface(c1, c2, c3);
 }

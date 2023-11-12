@@ -17,23 +17,25 @@ typedef enum {
     FREQ_SCALE_100 = 0b11
 } FreqScale_E;
 
-typedef struct ColorFreq_T {
-    Color_E color;
-    uint32_t freq;
-} ColorFreq_T;
-
 typedef enum {
-    COLOR_1,
-    COLOR_2,
-    COLOR_3
+    COLOR_SENSOR_1,
+    COLOR_SENSOR_2,
+    COLOR_SENSOR_3,
+    COLOR_SENSOR_ERROR
 } ColorSensor_E;
 
-extern volatile uint16_t gu16_TIM2_OVC;
-extern volatile ColorFreq_T colorFreqs[4];
-void colorSensorInit();
-int32_t getFreq();
-HAL_StatusTypeDef selectColorSensor(ColorSensor_E cs);
-float getLineError();
-char* colorToStr(Color_E color);
-void setColor(Color_E color);
+typedef enum {
+    SURFACE_WOOD,
+    SURFACE_TAPE,
+    SURFACE_BLACK,
+    SERFACE_ERROR
+} SurfaceType_E;
+
+HAL_StatusTypeDef colorSensorInit();
+uint32_t colorGetFreq(ColorSensor_E sensor);
+void colorSetFreqScaling(FreqScale_E freqScale);
+HAL_StatusTypeDef colorSelectSensor(ColorSensor_E cs);
+double colorGetNormalizedOut(ColorSensor_E sensor);
+SurfaceType_E colorGetLineDeviation(double *out);
+void colorSet(Color_E color);
 #endif  // __COLOR_SENSOR_H__
