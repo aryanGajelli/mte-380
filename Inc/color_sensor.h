@@ -27,6 +27,7 @@ typedef enum {
 typedef enum {
     SURFACE_WOOD,
     SURFACE_TAPE,
+    SURFACE_BLACK,
     SERFACE_ERROR
 } SurfaceType_E;
 

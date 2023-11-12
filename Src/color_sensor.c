@@ -140,25 +140,14 @@ double colorGetNormalizedOut(ColorSensor_E sensor) {
 }
 
 /**
- * @brief Returns a weighted average of the 3 sensors.
- *        If the average of the 3 sensors is above a wood threshold, then the average is added to the weighted average.
- *        This is to prevent the robot from thinking it is on wood when it is on red tape.
- *        See https://theultimatelinefollower.blogspot.com/2015/12/interpolation.html
+ * @brief Returns the surface type based on the color sensor readings.
+ * @param c1 The normalized value of color sensor 1.
+ * @param c2 The normalized value of color sensor 2.
+ * @param c3 The normalized value of color sensor 3.
  */
-SurfaceType_E colorGetLineDeviation(double* out) {
-#define WOOD_THRESHOLD 0.95
-    // measured sensor displacements from center of robot
-    static const double sensorLocs_mm[3] = {15, 0, 17.95};
-
-    double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
-    double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
-    double c3 = colorGetNormalizedOut(COLOR_SENSOR_3);
-
-    double num = sensorLocs_mm[0] * (c3 - c1);
-    double denom = c1 + c2 + c3;
-
-    *out = num / denom + sensorLocs_mm[1];
-
+SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
+    static const double WOOD_THRESHOLD = 0.95;
+    static const double BLACK_THRESHOLD = -0.6;
     // if 2 sensors are above the wood threshold, then we are on wood
     if (c1 > WOOD_THRESHOLD && c2 > WOOD_THRESHOLD)
         return SURFACE_WOOD;
@@ -167,5 +156,34 @@ SurfaceType_E colorGetLineDeviation(double* out) {
     if (c2 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
         return SURFACE_WOOD;
 
+    // if 2 sensors are below the black threshold, then we are on black tape
+    if (c1 < BLACK_THRESHOLD && c2 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
+    if (c1 < BLACK_THRESHOLD && c3 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
+    if (c2 < BLACK_THRESHOLD && c3 < BLACK_THRESHOLD)
+        return SURFACE_BLACK;
     return SURFACE_TAPE;
+}
+
+/**
+ * @brief Returns a weighted average of the 3 sensors.
+ *        If the average of the 3 sensors is above a wood threshold, then the average is added to the weighted average.
+ *        This is to prevent the robot from thinking it is on wood when it is on red tape.
+ *        See https://theultimatelinefollower.blogspot.com/2015/12/interpolation.html
+ */
+SurfaceType_E colorGetLineDeviation(double* out) {
+    // measured sensor displacements from center of robot
+    static const double sensorLocs_mm[3] = {15, 0, -17.95};
+
+    double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
+    double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
+    double c3 = colorGetNormalizedOut(COLOR_SENSOR_3);
+
+    double num = sensorLocs_mm[0] * c3 + sensorLocs_mm[1] * c2 + sensorLocs_mm[2] * c1;
+    double denom = c1 + c2 + c3;
+
+    *out = num / denom + sensorLocs_mm[1];
+
+    return colorDetectSurface(c1, c2, c3);
 }
