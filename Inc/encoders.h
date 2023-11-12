@@ -9,9 +9,9 @@ typedef enum {
 } Encoder_E;
 
 typedef struct Encoder_T {
-    float velocity;
-    int32_t position;
-    int32_t prevPosition;
+    float ticks_per_s;
+    int32_t ticks;
+    int32_t prevTicks;
     int32_t overflow;
     Encoder_E encoderSide;
     uint32_t timeStamp;

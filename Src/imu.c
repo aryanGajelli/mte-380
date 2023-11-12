@@ -5,10 +5,9 @@
 #include "bsp.h"
 #include "debug.h"
 #include "stm32f4xx_hal.h"
-#include "motion_gc.h"
 
 UserBankSel_E expected_CurrUserBank = USER_BANK_ERROR;
-
+AppliedSensitivity_T appliedSensitivity;
 HAL_StatusTypeDef ICMInit() {
     uint8_t data;
     // user bank 0 contains critical configuration registers
@@ -38,10 +37,50 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
 
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
 
-    if (ICM_SetGyroDPSAndLPF(GYRO_DPS_250, GYRO_LPF_154HZ) != HAL_OK) return HAL_ERROR;
-    if (ICM_SetGyroSampleRate(1100) != HAL_OK) return HAL_ERROR;
+    appliedSensitivity.gyroDPS = GYRO_DPS_250;
+    static const double GYRO_SENS_250DPS = 131.0, GYRO_SENS_500DPS = 65.5,
+                        GYRO_SENS_1000DPS = 32.8, GYRO_SENS_2000DPS = 16.4;
+    switch (appliedSensitivity.gyroDPS) {
+        case GYRO_DPS_250:
+            appliedSensitivity.gyroSensitivity = GYRO_SENS_250DPS;
+            break;
+        case GYRO_DPS_500:
+            appliedSensitivity.gyroSensitivity = GYRO_SENS_500DPS;
+            break;
+        case GYRO_DPS_1000:
+            appliedSensitivity.gyroSensitivity = GYRO_SENS_1000DPS;
+            break;
+        case GYRO_DPS_2000:
+            appliedSensitivity.gyroSensitivity = GYRO_SENS_2000DPS;
+            break;
+        default:
+            return HAL_ERROR;
+    }
 
-    if (ICM_SetAccelScaleAndLPF(ACCEL_SCALE_2G, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroDPSAndLPF(appliedSensitivity.gyroDPS, GYRO_LPF_9HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroSampleRate(1100) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroOffset((vector3_t){0, 0, 0}) != HAL_OK) return HAL_ERROR;
+
+    appliedSensitivity.accelScale = ACCEL_SCALE_2G;
+    static const double ACCEL_SENS_2G = 16384.0, ACCEL_SENS_4G = 8192.0,
+                        ACCEL_SENS_8G = 4096.0, ACCEL_SENS_16G = 2048.0;
+    switch (appliedSensitivity.accelScale) {
+        case ACCEL_SCALE_2G:
+            appliedSensitivity.accelSensitivity = ACCEL_SENS_2G;
+            break;
+        case ACCEL_SCALE_4G:
+            appliedSensitivity.accelSensitivity = ACCEL_SENS_4G;
+            break;
+        case ACCEL_SCALE_8G:
+            appliedSensitivity.accelSensitivity = ACCEL_SENS_8G;
+            break;
+        case ACCEL_SCALE_16G:
+            appliedSensitivity.accelSensitivity = ACCEL_SENS_16G;
+            break;
+        default:
+            return HAL_ERROR;
+    }
+    if (ICM_SetAccelScaleAndLPF(appliedSensitivity.accelScale, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetAccelSampleRate(1100) != HAL_OK) return HAL_ERROR;
     HAL_Delay(50);
     return HAL_OK;
@@ -75,12 +114,13 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
     data = 0x01;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
-
     // Reset AK8963
     const uint8_t MAG_RESET = 0x01;
     AK0_WriteOneByte(MAG_CNTL3_REG, MAG_RESET);
     HAL_Delay(100);
     AK0_WriteOneByte(MAG_CNTL2_REG, MAG_MODE_CONT_4);
+
+    appliedSensitivity.magSensitivity = 0.15;
     return HAL_OK;
 }
 
@@ -210,6 +250,57 @@ HAL_StatusTypeDef ICM_SetAccelSampleRate(float accelSampleRate) {
 }
 
 /**
+ * @brief Set Gyroscope offset
+ * @param gyroOffset: vector3 containing the gyroscope offset
+ */
+HAL_StatusTypeDef ICM_SetGyroOffset(vector3_t offset) {
+    // invert scale to be raw value
+    offset.x *= appliedSensitivity.gyroSensitivity;
+    offset.y *= appliedSensitivity.gyroSensitivity;
+    offset.z *= appliedSensitivity.gyroSensitivity;
+
+    int16_t signedData[3] = {(int16_t)offset.x, (int16_t)offset.y, (int16_t)offset.z};
+    uint8_t raw[6] = {(uint8_t)(signedData[0] >> 8), (uint8_t)(signedData[0] & 0xff),
+                      (uint8_t)(signedData[1] >> 8), (uint8_t)(signedData[1] & 0xff),
+                      (uint8_t)(signedData[2] >> 8), (uint8_t)(signedData[2] & 0xff)};
+    ICM_SelectBank(USER_BANK_2);
+    return ICM_WriteBytes(XG_OFFS_USRH_REG, (uint8_t *)&raw, 6);
+}
+
+/**
+ * @brief Convert raw accel data to m/s^2
+ * @param raw: raw accel data
+ * @return accel in m/s^2
+ */
+void ICM_ConvertRawAccel(vector3_t *raw, vector3_t *accel) {
+    static const double GRAVITY = 9.81;
+
+    accel->x = raw->x * -GRAVITY / appliedSensitivity.accelSensitivity;
+    accel->y = raw->y * -GRAVITY / appliedSensitivity.accelSensitivity;
+    accel->z = raw->z * -GRAVITY / appliedSensitivity.accelSensitivity;
+}
+
+/**
+ * @brief Convert raw gyro data to deg/s
+ * @param raw: raw gyro data
+ * @return gyro in deg/s
+ */
+void ICM_ConvertRawGyro(vector3_t *raw, vector3_t *gyro) {
+    gyro->x = raw->x / appliedSensitivity.gyroSensitivity;
+    gyro->y = raw->y / appliedSensitivity.gyroSensitivity;
+    gyro->z = raw->z / appliedSensitivity.gyroSensitivity;
+}
+
+/**
+ * @brief Convert raw mag data to uT
+ */
+void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag) {
+    mag->x = raw->x * appliedSensitivity.magSensitivity;
+    mag->y = raw->y * appliedSensitivity.magSensitivity;
+    mag->z = raw->z * appliedSensitivity.magSensitivity;
+}
+
+/**
  * @brief Read the Accelerometer and Gyroscope data from ICM20948
  * @param accel_data: pointer to array of 3 floats to store the accelerometer data
  * @param gyro_data: pointer to array of 3 floats to store the gyroscope data
@@ -218,7 +309,6 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     static const size_t NUM_BYTES = ACCEL_GYRO_END_REG - ACCEL_GYRO_START_REG + 1;
     uint8_t gotBytes[NUM_BYTES + 1];
     uint8_t *raw_data = gotBytes + 1;
-    int16_t signed_data[NUM_BYTES / 2];
 
     if (expected_CurrUserBank != USER_BANK_0) {
         if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
@@ -226,31 +316,27 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
 
     if (ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, NUM_BYTES) != HAL_OK) return HAL_ERROR;
 
-    signed_data[0] = (raw_data[0] << 8) | raw_data[1];
-    signed_data[1] = (raw_data[2] << 8) | raw_data[3];
-    signed_data[2] = (raw_data[4] << 8) | raw_data[5];
+    vector3_t rawAccel, rawGyro;
+    rawAccel.x = (int16_t)((raw_data[0] << 8) | raw_data[1]);
+    rawAccel.y = (int16_t)((raw_data[2] << 8) | raw_data[3]);
+    rawAccel.z = (int16_t)((raw_data[4] << 8) | raw_data[5]);
 
-    signed_data[3] = (raw_data[6] << 8) | raw_data[7];
-    signed_data[4] = (raw_data[8] << 8) | raw_data[9];
-    signed_data[5] = (raw_data[10] << 8) | raw_data[11];
+    rawGyro.x = (int16_t)((raw_data[6] << 8) | raw_data[7]);
+    rawGyro.y = (int16_t)((raw_data[8] << 8) | raw_data[9]);
+    rawGyro.z = (int16_t)((raw_data[10] << 8) | raw_data[11]);
 
-    accel->x = signed_data[0] * 9.81 / -16384.0;
-    accel->y = signed_data[1] * 9.81 / -16384.0;
-    accel->z = signed_data[2] * 9.81 / -16384.0;
-
-    gyro->x = signed_data[3] / 131.;
-    gyro->y = signed_data[4] / 131.;
-    gyro->z = signed_data[5] / 131.;
+    ICM_ConvertRawAccel(&rawAccel, accel);
+    ICM_ConvertRawGyro(&rawGyro, gyro);
     return HAL_OK;
 }
 
 /**
  * @brief Read the Accelerometer, Gyroscope, and Magnetometer data from ICM20948
- * @param data: pointer to IMUData_t struct to store the data
+ * @param data: pointer to IMUData_T struct to store the data
  */
-HAL_StatusTypeDef ICM_Read(IMUData_t *data) {
+HAL_StatusTypeDef ICM_Read(IMUData_T *data) {
     static const size_t NUM_BYTES = ACCEL_GYRO_MAG_END_REG - ACCEL_GYRO_START_REG + 1;
-    uint8_t gotBytes[NUM_BYTES + 1]; // account for transmit byte garbage values in miso
+    uint8_t gotBytes[NUM_BYTES + 1];  // account for transmit byte garbage values in miso
     uint8_t *raw_data = gotBytes + 1;
     int16_t signed_data[9];
     if (expected_CurrUserBank != USER_BANK_0) {
@@ -258,35 +344,44 @@ HAL_StatusTypeDef ICM_Read(IMUData_t *data) {
     }
     ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, NUM_BYTES);
     data->timestamp = HAL_GetTick();
-    signed_data[0] = (raw_data[0] << 8) | raw_data[1];
-    signed_data[1] = (raw_data[2] << 8) | raw_data[3];
-    signed_data[2] = (raw_data[4] << 8) | raw_data[5];
 
-    signed_data[3] = (raw_data[6] << 8) | raw_data[7];
-    signed_data[4] = (raw_data[8] << 8) | raw_data[9];
-    signed_data[5] = (raw_data[10] << 8) | raw_data[11];
+    vector3_t rawAccel, rawGyro, rawMag;
+    rawAccel.x = (int16_t)((raw_data[0] << 8) | raw_data[1]);
+    rawAccel.y = (int16_t)((raw_data[2] << 8) | raw_data[3]);
+    rawAccel.z = (int16_t)((raw_data[4] << 8) | raw_data[5]);
 
-    signed_data[6] = (raw_data[15] << 8) | raw_data[14];
-    signed_data[7] = (raw_data[17] << 8) | raw_data[16];
-    signed_data[8] = (raw_data[19] << 8) | raw_data[18];
+    rawGyro.x = (int16_t)((raw_data[6] << 8) | raw_data[7]);
+    rawGyro.y = (int16_t)((raw_data[8] << 8) | raw_data[9]);
+    rawGyro.z = (int16_t)((raw_data[10] << 8) | raw_data[11]);
 
-    vector3_t *accel = &data->accel, *gyro = &data->gyro, *mag = &data->mag;
+    rawMag.x = (int16_t)((raw_data[15] << 8) | raw_data[14]);
+    rawMag.y = (int16_t)((raw_data[17] << 8) | raw_data[16]);
+    rawMag.z = (int16_t)((raw_data[19] << 8) | raw_data[18]);
 
-    accel->x = signed_data[0] * 9.81 / -16384.0;
-    accel->y = signed_data[1] * 9.81 / -16384.0;
-    accel->z = signed_data[2] * 9.81 / -16384.0;
-
-    gyro->x = signed_data[3] / 131.;
-    gyro->y = signed_data[4] / 131.;
-    gyro->z = signed_data[5] / 131.;
-
-    mag->x = signed_data[6] * 0.15;
-    mag->y = signed_data[7] * 0.15;
-    mag->z = signed_data[8] * 0.15;
+    ICM_ConvertRawAccel(&rawAccel, &data->accel);
+    ICM_ConvertRawGyro(&rawGyro, &data->gyro);
+    ICM_ConvertRawMag(&rawMag, &data->mag);
     return HAL_OK;
-
 }
 
 /**
  * @brief Calibrate the gyroscope
-*/
+ */
+HAL_StatusTypeDef ICM_CalibrateGyro() {
+    vector3_t gyroSum = {0, 0, 0};
+    vector3_t gyro;
+    for (int i = 0; i < 100; i++) {
+        if (ICM_ReadAccelGyro(NULL, &gyro) != HAL_OK)
+            return HAL_ERROR;
+        gyroSum.x += gyro.x;
+        gyroSum.y += gyro.y;
+        gyroSum.z += gyro.z;
+        HAL_Delay(2);
+    }
+    // for some reason gotta divide by 4*count
+    gyroSum.x /= -400;
+    gyroSum.y /= -400;
+    gyroSum.z /= -400;
+
+    return ICM_SetGyroOffset(gyroSum);
+}

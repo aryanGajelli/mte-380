@@ -9,7 +9,7 @@ volatile Encoder_T encoderLeft;
 volatile Encoder_T encoderRight;
 
 void encoderUpdate(Encoder_T *encoder) {
-    encoder->prevPosition = encoder->position;
+    encoder->prevTicks = encoder->ticks;
     uint32_t timeStamp = HAL_GetTick();
     int8_t dir;
     TIM_HandleTypeDef *htim;
@@ -25,8 +25,8 @@ void encoderUpdate(Encoder_T *encoder) {
 
     uint32_t counter = __HAL_TIM_GET_COUNTER(htim);
     uint32_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
-    encoder->position = dir * (counter + encoder->overflow * arr);
-    encoder->velocity = 1000*(encoder->position - encoder->prevPosition) / (float)(timeStamp - encoder->timeStamp);
+    encoder->ticks = dir * (counter + encoder->overflow * arr);
+    encoder->ticks_per_s = 1000*(encoder->ticks - encoder->prevTicks) / (float)(timeStamp - encoder->timeStamp);
      
     encoder->timeStamp = timeStamp;
 }

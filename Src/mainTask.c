@@ -26,15 +26,13 @@ void mainTask(void *pvParameters) {
         Error_Handler();
     }
 
-    double line_deviation = 0;
-
+    vector3_t gyro;
+    ICM_CalibrateGyro();
     while (1) {
+        ICM_ReadAccelGyro(NULL, &gyro);
 
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_1));
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_2));
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_3));
-        uprintf("%d %.3f\n", colorGetLineDeviation(&line_deviation), line_deviation);
-    
+        // print gyro data
+        uprintf("%.3f\t %.3f\t %.3f\n", gyro.x, gyro.y, gyro.z);
         vTaskDelay(10);
     }
 }
