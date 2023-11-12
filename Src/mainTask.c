@@ -25,9 +25,15 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
+
     while (1) {
-        uprintf("%lu\t%lu\t%lu\n", colorGetFreq(COLOR_SENSOR_1), colorGetFreq(COLOR_SENSOR_2), colorGetFreq(COLOR_SENSOR_3));
-        vTaskDelay(30);
+
+        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_1));
+        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_2));
+        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_3));
+        uprintf("%.3f\n", colorGetWeightedValue());
+    
+        vTaskDelay(10);
     }
 }
 
@@ -46,11 +52,11 @@ HAL_StatusTypeDef mainTaskInit() {
 
     if (servoInit() != HAL_OK) {
         return HAL_ERROR;
-    }    
+    }
 
     if (encodersInit() != HAL_OK) {
         return HAL_ERROR;
-    }    
+    }
 
     return HAL_OK;
 }

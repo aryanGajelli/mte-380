@@ -32,6 +32,7 @@ typedef enum {
 HAL_StatusTypeDef colorSensorInit();
 uint32_t colorGetFreq(ColorSensor_E sensor);
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E cs);
-float getLineError();
+double colorGetNormalizedOut(ColorSensor_E sensor);
+double colorGetWeightedValue();
 void colorSet(Color_E color);
 #endif  // __COLOR_SENSOR_H__

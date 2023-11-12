@@ -3,6 +3,7 @@
 #include "bsp.h"
 #include "debug.h"
 #include "stm32f4xx_hal.h"
+#include "mathUtils.h"
 
 uint32_t F_CLK;
 
@@ -55,33 +56,6 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
     }
 }
 
-/**
- * @brief Takes one sample of the period of the signal and inverts it based on F_CLK frequency
- */
-uint32_t colorGetFreq(ColorSensor_E sensor) {
-    colorSelectSensor(sensor);
-    uint32_t accumaltedPeriod = 0;
-    #define NUM_SAMPLES 15
-    for (uint8_t i = 0; i < NUM_SAMPLES; i++) {
-        HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-            ;
-        accumaltedPeriod += colorSensorPeriod;
-    }
-
-    return NUM_SAMPLES * F_CLK / accumaltedPeriod;
-}
-
-void colorSetFreqScaling(FreqScale_E freqScale) {
-    HAL_GPIO_WritePin(COLOR_S0_GPIO_Port, COLOR_S0_GPIO_Port, (freqScale & 0b10) >> 1);
-    HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
-}
-
-void colorSet(Color_E color) {
-    HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
-    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
-}
-
 HAL_StatusTypeDef colorSensorInit() {
     COLOR_1_DIS();
     COLOR_2_DIS();
@@ -100,6 +74,32 @@ HAL_StatusTypeDef colorSensorInit() {
     colorSet(GREEN);
     return HAL_OK;
 }
+
+/**
+ * @brief Takes multiple samples of the period of the signal and inverts it based on F_CLK frequency
+ */
+uint32_t colorGetFreq(ColorSensor_E sensor) {
+    colorSelectSensor(sensor);
+    // Need to take 2 samples as first one is always junky when switching between sensors
+    #define NTH_SAMPLE_VALID 2
+    for (uint8_t i = 0; i < NTH_SAMPLE_VALID; i++) {
+        HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
+        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY);
+    }
+    return F_CLK / colorSensorPeriod;
+}
+
+void colorSetFreqScaling(FreqScale_E freqScale) {
+    HAL_GPIO_WritePin(COLOR_S0_GPIO_Port, COLOR_S0_GPIO_Port, (freqScale & 0b10) >> 1);
+    HAL_GPIO_WritePin(COLOR_S1_GPIO_Port, COLOR_S1_GPIO_Port, freqScale & 0b1);
+}
+
+void colorSet(Color_E color) {
+    HAL_GPIO_WritePin(COLOR_S2_GPIO_Port, COLOR_S2_Pin, (color & 0b10) >> 1);
+    HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
+}
+
+
 
 /**
  * @brief Garauntees that only 1 sensor will be selected at once.
@@ -130,14 +130,32 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
     }
 }
 
-float getLineError() {
+/**
+ * @brief Normalizes the values of all 3 sensors to be between 0 and 1.
+ *        With 1 representing wood and 0 representing red tape.
+*/
+double colorGetNormalizedOut(ColorSensor_E sensor) {
+    static const uint32_t c1_wood = 49500, c2_wood = 66500, c3_wood = 44500;
+    static const uint32_t c1_tape = 30300, c2_tape = 35200, c3_tape = 26900;
+    uint32_t freq = colorGetFreq(sensor);
+    switch (sensor) {
+        case COLOR_SENSOR_1:
+            return map(freq, c1_tape, c1_wood, 0, 1);
+        case COLOR_SENSOR_2:
+            return map(freq, c2_tape, c2_wood, 0, 1);
+        case COLOR_SENSOR_3:
+            return map(freq, c3_tape, c3_wood, 0, 1);
+        default:
+            return -255;
+    }
+
+}
+double colorGetWeightedValue() {
     // dot product of the color vector and weight vector, middle being the highest weight
-    static const int32_t NO_LINE_FREQ = 30000;
-    static const int32_t LINE_FREQ = 110000;
-    static const float WEIGHTS[3] = {0.5, 1, 0.5};
-    float error = 0;
-    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_1) + NO_LINE_FREQ) * WEIGHTS[0];
-    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_2) + NO_LINE_FREQ) * WEIGHTS[1];
-    error += (LINE_FREQ - colorGetFreq(COLOR_SENSOR_3) + NO_LINE_FREQ) * WEIGHTS[2];
-    return error;
+    static const double WEIGHTS[3] = {-1, 0.5, 1};
+    double weightedAverage = 0;
+    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_1) * WEIGHTS[0];
+    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_2) * WEIGHTS[1];
+    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_3) * WEIGHTS[2];
+    return weightedAverage / 3;
 }

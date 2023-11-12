@@ -78,6 +78,10 @@ void Error_Handler(void);
 #define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define ENCODER_R_1_Pin GPIO_PIN_6
+#define ENCODER_R_1_GPIO_Port GPIOA
+#define ENCODER_R_2_Pin GPIO_PIN_7
+#define ENCODER_R_2_GPIO_Port GPIOA
 #define DIST_IR_Pin GPIO_PIN_0
 #define DIST_IR_GPIO_Port GPIOB
 #define COLOR_S3_Pin GPIO_PIN_1
@@ -92,6 +96,10 @@ void Error_Handler(void);
 #define COLOR_S1_GPIO_Port GPIOB
 #define COLOR_S2_Pin GPIO_PIN_15
 #define COLOR_S2_GPIO_Port GPIOB
+#define ENCODER_L_2_Pin GPIO_PIN_8
+#define ENCODER_L_2_GPIO_Port GPIOA
+#define ENCODER_L_2A9_Pin GPIO_PIN_9
+#define ENCODER_L_2A9_GPIO_Port GPIOA
 #define COLOR_2_CS_Pin GPIO_PIN_11
 #define COLOR_2_CS_GPIO_Port GPIOA
 #define COLOR_1_CS_Pin GPIO_PIN_12
