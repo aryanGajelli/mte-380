@@ -17,11 +17,6 @@ typedef enum {
     FREQ_SCALE_100 = 0b11
 } FreqScale_E;
 
-typedef struct ColorFreq_T {
-    Color_E color;
-    uint32_t freq;
-} ColorFreq_T;
-
 typedef enum {
     COLOR_SENSOR_1,
     COLOR_SENSOR_2,
@@ -37,6 +32,7 @@ typedef enum {
 
 HAL_StatusTypeDef colorSensorInit();
 uint32_t colorGetFreq(ColorSensor_E sensor);
+void colorSetFreqScaling(FreqScale_E freqScale);
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E cs);
 double colorGetNormalizedOut(ColorSensor_E sensor);
 SurfaceType_E colorGetLineDeviation(double *out);

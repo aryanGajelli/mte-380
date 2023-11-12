@@ -7,18 +7,6 @@
 
 uint32_t F_CLK;
 
-const uint32_t redLow = 2200;
-const uint32_t redHigh = 80500;
-
-const uint32_t greenLow = 1000;
-const uint32_t greenHigh = 47500;
-
-const uint32_t clearLow = 700;
-const uint32_t clearHigh = 47500;
-
-const uint32_t blueLow = 5600;
-const uint32_t blueHigh = 170000;
-
 #define COLOR_1_EN() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_RESET)
 #define COLOR_1_DIS() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_SET)
 
@@ -80,13 +68,13 @@ HAL_StatusTypeDef colorSensorInit() {
  */
 uint32_t colorGetFreq(ColorSensor_E sensor) {
     colorSelectSensor(sensor);
-// Need to take 2 samples as first one is always junky when switching between sensors
-#define NTH_SAMPLE_VALID 2
-    for (uint8_t i = 0; i < NTH_SAMPLE_VALID; i++) {
-        HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-            ;
-    }
+    // Need to take 2 samples as first one is always junky when switching between sensors
+    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
+    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
+    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+        ;
     return F_CLK / colorSensorPeriod;
 }
 
@@ -158,7 +146,7 @@ double colorGetNormalizedOut(ColorSensor_E sensor) {
  *        See https://theultimatelinefollower.blogspot.com/2015/12/interpolation.html
  */
 SurfaceType_E colorGetLineDeviation(double* out) {
-    #define WOOD_THRESHOLD 0.95
+#define WOOD_THRESHOLD 0.95
     // measured sensor displacements from center of robot
     static const double sensorLocs_mm[3] = {15, 0, 17.95};
 
