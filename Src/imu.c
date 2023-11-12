@@ -111,7 +111,7 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
     ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK_400kHz);
 
     // set magnetometer data rate to 1.1kHz/ (2^3) = 136 Hz, page 68
-    data = 0x01;
+    data = 0x03;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
     // Reset AK8963
@@ -295,9 +295,11 @@ void ICM_ConvertRawGyro(vector3_t *raw, vector3_t *gyro) {
  * @brief Convert raw mag data to uT
  */
 void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag) {
-    mag->x = raw->x * appliedSensitivity.magSensitivity;
-    mag->y = raw->y * appliedSensitivity.magSensitivity;
-    mag->z = raw->z * appliedSensitivity.magSensitivity;
+    static const vector3_t minMag = {-54.150, -17.100, 3.750},
+                           maxMag = {13.500,       52.650,  76.800};
+    mag->x = raw->x * appliedSensitivity.magSensitivity - (minMag.x + maxMag.x) / 2;
+    mag->y = raw->y * appliedSensitivity.magSensitivity - (minMag.y + maxMag.y) / 2;
+    mag->z = raw->z * appliedSensitivity.magSensitivity - (minMag.z + maxMag.z) / 2;
 }
 
 /**

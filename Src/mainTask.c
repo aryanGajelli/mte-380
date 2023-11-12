@@ -1,7 +1,7 @@
-#include <math.h>
 #include <stdio.h>
 
 #include "FreeRTOS.h"
+#include "arm_math.h"
 #include "bsp.h"
 #include "color_sensor.h"
 #include "debug.h"
@@ -26,13 +26,13 @@ void mainTask(void *pvParameters) {
         Error_Handler();
     }
 
-    vector3_t gyro;
+    IMUData_T imuData;
     ICM_CalibrateGyro();
     while (1) {
-        ICM_ReadAccelGyro(NULL, &gyro);
+        ICM_Read(&imuData);
 
-        // print gyro data
-        uprintf("%.3f\t %.3f\t %.3f\n", gyro.x, gyro.y, gyro.z);
+        uprintf("%.3f\t %.3f  %.3f %.3f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z, 180/PI * atan2(imuData.mag.x, imuData.mag.y));
+
         vTaskDelay(10);
     }
 }
