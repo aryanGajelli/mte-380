@@ -29,10 +29,16 @@ typedef enum {
     COLOR_SENSOR_ERROR
 } ColorSensor_E;
 
+typedef enum {
+    SURFACE_WOOD,
+    SURFACE_TAPE,
+    SERFACE_ERROR
+} SurfaceType_E;
+
 HAL_StatusTypeDef colorSensorInit();
 uint32_t colorGetFreq(ColorSensor_E sensor);
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E cs);
 double colorGetNormalizedOut(ColorSensor_E sensor);
-double colorGetWeightedValue();
+SurfaceType_E colorGetLineDeviation(double *out);
 void colorSet(Color_E color);
 #endif  // __COLOR_SENSOR_H__

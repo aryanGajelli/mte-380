@@ -26,12 +26,14 @@ void mainTask(void *pvParameters) {
         Error_Handler();
     }
 
+    double line_deviation = 0;
+
     while (1) {
 
         uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_1));
         uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_2));
         uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_3));
-        uprintf("%.3f\n", colorGetWeightedValue());
+        uprintf("%d %.3f\n", colorGetLineDeviation(&line_deviation), line_deviation);
     
         vTaskDelay(10);
     }

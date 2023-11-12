@@ -2,8 +2,8 @@
 
 #include "bsp.h"
 #include "debug.h"
-#include "stm32f4xx_hal.h"
 #include "mathUtils.h"
+#include "stm32f4xx_hal.h"
 
 uint32_t F_CLK;
 
@@ -80,11 +80,12 @@ HAL_StatusTypeDef colorSensorInit() {
  */
 uint32_t colorGetFreq(ColorSensor_E sensor) {
     colorSelectSensor(sensor);
-    // Need to take 2 samples as first one is always junky when switching between sensors
-    #define NTH_SAMPLE_VALID 2
+// Need to take 2 samples as first one is always junky when switching between sensors
+#define NTH_SAMPLE_VALID 2
     for (uint8_t i = 0; i < NTH_SAMPLE_VALID; i++) {
         HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY);
+        while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
+            ;
     }
     return F_CLK / colorSensorPeriod;
 }
@@ -99,10 +100,9 @@ void colorSet(Color_E color) {
     HAL_GPIO_WritePin(COLOR_S3_GPIO_Port, COLOR_S3_Pin, color & 0b1);
 }
 
-
-
 /**
  * @brief Garauntees that only 1 sensor will be selected at once.
+ * @param sensor The sensor to select.
  */
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
     static ColorSensor_E prevSensor = COLOR_SENSOR_ERROR;
@@ -133,7 +133,8 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
 /**
  * @brief Normalizes the values of all 3 sensors to be between 0 and 1.
  *        With 1 representing wood and 0 representing red tape.
-*/
+ * @param sensor The sensor to get the normalized value of.
+ */
 double colorGetNormalizedOut(ColorSensor_E sensor) {
     static const uint32_t c1_wood = 49500, c2_wood = 66500, c3_wood = 44500;
     static const uint32_t c1_tape = 30300, c2_tape = 35200, c3_tape = 26900;
@@ -148,14 +149,35 @@ double colorGetNormalizedOut(ColorSensor_E sensor) {
         default:
             return -255;
     }
-
 }
-double colorGetWeightedValue() {
-    // dot product of the color vector and weight vector, middle being the highest weight
-    static const double WEIGHTS[3] = {-1, 0.5, 1};
-    double weightedAverage = 0;
-    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_1) * WEIGHTS[0];
-    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_2) * WEIGHTS[1];
-    weightedAverage += colorGetNormalizedOut(COLOR_SENSOR_3) * WEIGHTS[2];
-    return weightedAverage / 3;
+
+/**
+ * @brief Returns a weighted average of the 3 sensors.
+ *        If the average of the 3 sensors is above a wood threshold, then the average is added to the weighted average.
+ *        This is to prevent the robot from thinking it is on wood when it is on red tape.
+ *        See https://theultimatelinefollower.blogspot.com/2015/12/interpolation.html
+ */
+SurfaceType_E colorGetLineDeviation(double* out) {
+    #define WOOD_THRESHOLD 0.95
+    // measured sensor displacements from center of robot
+    static const double sensorLocs_mm[3] = {15, 0, 17.95};
+
+    double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
+    double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
+    double c3 = colorGetNormalizedOut(COLOR_SENSOR_3);
+
+    double num = sensorLocs_mm[0] * (c3 - c1);
+    double denom = c1 + c2 + c3;
+
+    *out = num / denom + sensorLocs_mm[1];
+
+    // if 2 sensors are above the wood threshold, then we are on wood
+    if (c1 > WOOD_THRESHOLD && c2 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+    if (c1 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+    if (c2 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+
+    return SURFACE_TAPE;
 }

@@ -132,7 +132,7 @@ void demoLineSense() {
     float prevError = 0;
     float error;
     while (1) {
-        // error = colorGetWeightedValue();
+        // error = colorGetLineDeviation();
         error = 2;
         float dutyCycle = Kp * error + Kd * (error - prevError);
         prevError = error;
