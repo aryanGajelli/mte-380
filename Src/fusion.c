@@ -25,6 +25,7 @@ HAL_StatusTypeDef fusionInit(void) {
     iKnobs.modx = 1;
     memcpy(iKnobs.mag_orientation, "ned", 4);
     iKnobs.output_type = MFX_ENGINE_OUTPUT_ENU;
+    iKnobs.start_automatic_gbias_calculation = 1;
     MotionFX_setKnobs(&iKnobs);
     printKnobs(&iKnobs);
     MotionFX_enable_6X(MFX_ENGINE_DISABLE);

@@ -80,9 +80,10 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
         default:
             return HAL_ERROR;
     }
-    if (ICM_SetAccelScaleAndLPF(appliedSensitivity.accelScale, ACCEL_LPF_1248HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetAccelScaleAndLPF(appliedSensitivity.accelScale, ACCEL_LPF_500HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetAccelSampleRate(1100) != HAL_OK) return HAL_ERROR;
     HAL_Delay(50);
+    ICM_CalibrateGyro();
     return HAL_OK;
 }
 
