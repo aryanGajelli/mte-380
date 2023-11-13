@@ -124,8 +124,8 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
  * @param sensor The sensor to get the normalized value of.
  */
 double colorGetNormalizedOut(ColorSensor_E sensor) {
-    static const uint32_t c1_wood = 49500, c2_wood = 66500, c3_wood = 44500;
-    static const uint32_t c1_tape = 30300, c2_tape = 35200, c3_tape = 26900;
+    static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 54500;
+    static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 24500;
     uint32_t freq = colorGetFreq(sensor);
     switch (sensor) {
         case COLOR_SENSOR_1:
