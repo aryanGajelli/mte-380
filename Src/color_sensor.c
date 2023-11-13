@@ -124,8 +124,8 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
  * @param sensor The sensor to get the normalized value of.
  */
 double colorGetNormalizedOut(ColorSensor_E sensor) {
-    static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 54500;
-    static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 24500;
+    static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 60500;
+    static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 27000;
     uint32_t freq = colorGetFreq(sensor);
     switch (sensor) {
         case COLOR_SENSOR_1:
@@ -147,13 +147,15 @@ double colorGetNormalizedOut(ColorSensor_E sensor) {
  */
 SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
     static const double WOOD_THRESHOLD = 0.95;
-    static const double BLACK_THRESHOLD = -0.6;
+    static const double BLACK_THRESHOLD = 0.06;
     // if 2 sensors are above the wood threshold, then we are on wood
     if (c1 > WOOD_THRESHOLD && c2 > WOOD_THRESHOLD)
         return SURFACE_WOOD;
     if (c1 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
         return SURFACE_WOOD;
     if (c2 > WOOD_THRESHOLD && c3 > WOOD_THRESHOLD)
+        return SURFACE_WOOD;
+    if (c1 > 0.75 * WOOD_THRESHOLD && c2 > 0.75 * WOOD_THRESHOLD && c3 > 0.75 * WOOD_THRESHOLD)
         return SURFACE_WOOD;
 
     // if 2 sensors are below the black threshold, then we are on black tape
