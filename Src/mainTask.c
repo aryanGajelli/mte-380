@@ -27,8 +27,20 @@ void mainTask(void *pvParameters) {
     }
 
     double line_deviation = 0;
-
+    // uint32_t max = 0;
+    // uint32_t min = 0xFFFFFFFF;
     while (1) {
+        // uint32_t freq = colorGetFreq(COLOR_SENSOR_3);
+        // if (freq > max) {
+        //     max = freq;
+        // }
+        // if (freq < min) {
+        //     min = freq;
+        // }
+        // uprintf("%lu %lu %lu\n",freq, min, max);
+
+        // uprintf("%lu\t",colorGetFreq(COLOR_SENSOR_2));
+        // uprintf("%lu\n",colorGetFreq(COLOR_SENSOR_3));
 
         uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_1));
         uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_2));
