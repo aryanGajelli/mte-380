@@ -37,7 +37,7 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
 
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
 
-    appliedSensitivity.gyroDPS = GYRO_DPS_500;
+    appliedSensitivity.gyroDPS = GYRO_DPS_1000;
     static const double GYRO_SENS_250DPS = 131.0, GYRO_SENS_500DPS = 65.5,
                         GYRO_SENS_1000DPS = 32.8, GYRO_SENS_2000DPS = 16.4;
     switch (appliedSensitivity.gyroDPS) {
@@ -57,7 +57,7 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
             return HAL_ERROR;
     }
 
-    if (ICM_SetGyroDPSAndLPF(appliedSensitivity.gyroDPS, GYRO_LPF_9HZ) != HAL_OK) return HAL_ERROR;
+    if (ICM_SetGyroDPSAndLPF(appliedSensitivity.gyroDPS, GYRO_LPF_17HZ) != HAL_OK) return HAL_ERROR;
     if (ICM_SetGyroSampleRate(1100) != HAL_OK) return HAL_ERROR;
     if (ICM_SetGyroOffset((vector3_t){0, 0, 0}) != HAL_OK) return HAL_ERROR;
 

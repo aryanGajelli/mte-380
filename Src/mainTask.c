@@ -1,12 +1,16 @@
 #include <stdio.h>
 
 #include "FreeRTOS.h"
+#include "ICM20948_register.h"
+#include "ICM20948_spi.h"
 #include "arm_math.h"
+#include <math.h>
 #include "bsp.h"
 #include "color_sensor.h"
 #include "debug.h"
 #include "demo.h"
 #include "encoders.h"
+#include "fusion.h"
 #include "imu.h"
 #include "main.h"
 #include "mathUtils.h"
@@ -25,26 +29,38 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
-
+    MFX_input_t data_in;
+    MFX_output_t data_out;
     IMUData_T imuData;
     IMUData_T prevImuData;
     ICM_Read(&imuData);
-    ICM_CalibrateGyro();
-    double hGyro = fmod(360 + 180 / PI * atan2(imuData.mag.x, imuData.mag.y), 360);
-    double k = 0.95;
+    float dT;
+    float *q;
     while (1) {
         prevImuData = imuData;
         ICM_Read(&imuData);
-        if (fabs(imuData.gyro.x) < 0.5) imuData.gyro.x = 0;
-        if (fabs(imuData.gyro.y) < 0.5) imuData.gyro.y = 0;
-        if (fabs(imuData.gyro.z) < 0.5) imuData.gyro.z = 0;
-        double hMag = fmod(360 + 180 / PI * atan2(imuData.mag.x, imuData.mag.y), 360);
-        hGyro = fmod(hGyro + imuData.gyro.z * (imuData.timestamp - prevImuData.timestamp) / 1000., 360);
-        hGyro = k * hGyro + (1 - k) * hMag;
+        
+        data_in.gyro[0] = imuData.gyro.x;
+        data_in.gyro[1] = imuData.gyro.y;
+        data_in.gyro[2] = imuData.gyro.z;
+        data_in.acc[0] = imuData.accel.x;
+        data_in.acc[1] = imuData.accel.y;
+        data_in.acc[2] = imuData.accel.z;
+        data_in.mag[0] = imuData.mag.x/50;
+        data_in.mag[1] = imuData.mag.y/50;
+        data_in.mag[2] = imuData.mag.z/50;
 
-        uprintf("%.3f %.3f %.3f\n",hMag, hGyro, imuData.gyro.z);
-
-        // vTaskDelay(10);
+        dT = (imuData.timestamp - prevImuData.timestamp) / 1000.0f;
+        MotionFX_propagate(&data_out, &data_in, &dT);
+        // MotionFX_update(&data_out, &data_in, &dT, NULL);
+        q = data_out.quaternion_9X;
+        // print q
+        // uprintf("q: %f, %f, %f, %f\n", q[0], q[1], q[2], q[3]);
+        // uprintf("h: %f\n", data_out.heading_9X);
+        // uprintf("dT: %f\n", dT);
+        // print acc gyro mag
+    
+        vTaskDelay(5);
     }
 }
 
@@ -66,6 +82,10 @@ HAL_StatusTypeDef mainTaskInit() {
     }
 
     if (encodersInit() != HAL_OK) {
+        return HAL_ERROR;
+    }
+
+    if (fusionInit() != HAL_OK) {
         return HAL_ERROR;
     }
 

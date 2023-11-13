@@ -5,11 +5,11 @@
  * @brief 3D float vector. Can access individual components or as an array.
  */
 typedef union vector3_t {
-    double v[3];
+    float v[3];
     struct {
-        double x;
-        double y;
-        double z;
+        float x;
+        float y;
+        float z;
     };
 } vector3_t;
 

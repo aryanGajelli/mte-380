@@ -48,7 +48,7 @@ typedef enum UserBankSel_E {
 
 // clock selctions
 typedef enum ClockSel_E {
-    CLK_BEST_AVAIL = 1,
+    CLK_BEST_AVAIL = 3,
     CLK_INTERNAL_20MHZ = 0,
     CLK_STOP = 7
 } ClockSel_E;
