@@ -111,7 +111,7 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
     ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK_400kHz);
 
     // set magnetometer data rate to 1.1kHz/ (2^3) = 136 Hz, page 68
-    data = 0x03;
+    data = 3;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
     // Reset AK8963
@@ -329,6 +329,30 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
 
     ICM_ConvertRawAccel(&rawAccel, accel);
     ICM_ConvertRawGyro(&rawGyro, gyro);
+    return HAL_OK;
+}
+
+/**
+ * @brief Read the Magnetometer data from ICM20948
+ * @param mag: pointer to vector3_t to store the magnetometer data
+ */
+HAL_StatusTypeDef ICM_ReadMag(vector3_t *mag) {
+    static const size_t NUM_BYTES = ACCEL_GYRO_MAG_END_REG - MAG_START_REG + 1;
+    uint8_t gotBytes[NUM_BYTES + 1];
+    uint8_t *raw_data = gotBytes + 1;
+
+    if (expected_CurrUserBank != USER_BANK_0) {
+        if (ICM_SelectBank(USER_BANK_0) != HAL_OK) return HAL_ERROR;
+    }
+
+    if (ICM_ReadBytes(MAG_START_REG, gotBytes, NUM_BYTES) != HAL_OK) return HAL_ERROR;
+
+    vector3_t rawMag;
+    rawMag.x = (int16_t)((raw_data[1] << 8) | raw_data[0]);
+    rawMag.y = (int16_t)((raw_data[3] << 8) | raw_data[2]);
+    rawMag.z = (int16_t)((raw_data[5] << 8) | raw_data[4]);
+
+    ICM_ConvertRawMag(&rawMag, mag);
     return HAL_OK;
 }
 

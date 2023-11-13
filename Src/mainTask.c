@@ -27,11 +27,22 @@ void mainTask(void *pvParameters) {
     }
 
     IMUData_T imuData;
+    IMUData_T prevImuData;
+    ICM_Read(&imuData);
     ICM_CalibrateGyro();
+    double hGyro = 180 / PI * atan2(imuData.mag.x, imuData.mag.y);
+    double k = 0.95;
     while (1) {
+        prevImuData = imuData;
         ICM_Read(&imuData);
+        if (fabs(imuData.gyro.x) < 0.5) imuData.gyro.x = 0;
+        if (fabs(imuData.gyro.y) < 0.5) imuData.gyro.y = 0;
+        if (fabs(imuData.gyro.z) < 0.5) imuData.gyro.z = 0;
+        double hMag = 180 / PI * atan2(imuData.mag.x, imuData.mag.y);
+        hGyro = fmod(hGyro + imuData.gyro.z * (imuData.timestamp - prevImuData.timestamp) / 1000., 360);
+        hGyro = k * hGyro + (1 - k) * hMag;
 
-        uprintf("%.3f\t %.3f  %.3f %.3f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z, 180/PI * atan2(imuData.mag.x, imuData.mag.y));
+        uprintf("%.3f %.3f %.3f\n",hMag, hGyro, imuData.gyro.z);
 
         vTaskDelay(10);
     }
