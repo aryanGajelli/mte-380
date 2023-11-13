@@ -1,10 +1,13 @@
 #include "fusion.h"
 
 #include "debug.h"
+#include "imu.h"
 #include "motion_fx.h"
-
+#include <string.h>
 #define MFX_STR_LENG 35
 #define ENABLE_9X 1
+
+void runMagCal();
 
 HAL_StatusTypeDef fusionInit(void) {
     __CRC_CLK_ENABLE();
@@ -18,24 +21,48 @@ HAL_StatusTypeDef fusionInit(void) {
     uprintf("MotionFX version: %s\n", lib_version);
 
     MotionFX_getKnobs(&iKnobs);
-    iKnobs.LMode = 0;
+    iKnobs.LMode = 2;
     iKnobs.modx = 1;
+    memcpy(iKnobs.mag_orientation, "ned", 4);
+    iKnobs.output_type = MFX_ENGINE_OUTPUT_ENU;
     MotionFX_setKnobs(&iKnobs);
     printKnobs(&iKnobs);
     MotionFX_enable_6X(MFX_ENGINE_DISABLE);
     MotionFX_enable_9X(MFX_ENGINE_DISABLE);
+    runMagCal();
 
-    if (ENABLE_9X){
+    if (ENABLE_9X) {
         MotionFX_enable_9X(MFX_ENGINE_ENABLE);
-    }
-    else{
+    } else {
         MotionFX_enable_6X(MFX_ENGINE_ENABLE);
     }
-    uprintf("9X state: %d\n", MotionFX_getStatus_9X());
     return HAL_OK;
 }
 
-void printKnobs(MFX_knobs_t* iKnobs) {
+void runMagCal() {
+    MotionFX_MagCal_init(10, MFX_ENGINE_ENABLE);
+#define CAL_SIZE 1000
+    MFX_MagCal_input_t magCal;
+    IMUData_T imuData;
+    for (int i = 0; i < CAL_SIZE; i++) {
+        ICM_Read(&imuData);
+        magCal.mag[0] = imuData.mag.x / 50;
+        magCal.mag[1] = imuData.mag.y / 50;
+        magCal.mag[2] = imuData.mag.z / 50;
+        magCal.time_stamp = imuData.timestamp;
+        // uprintf("mag: %.3f, %.3f, %.3f\n", magCal.mag[0], magCal.mag[1], magCal.mag[2]);
+        MotionFX_MagCal_run(&magCal);
+        MFX_MagCal_output_t mag_cal_out;
+        MotionFX_MagCal_getParams(&mag_cal_out);
+        if (mag_cal_out.cal_quality == MFX_MAGCALGOOD) {
+            uprintf("MagCal quality: %d\n", mag_cal_out.cal_quality);
+            break;
+        }
+        HAL_Delay(10);
+    }
+}
+
+void printKnobs(MFX_knobs_t *iKnobs) {
     uprintf("Default knobs values:\n");
     uprintf("ATime: %f\n", iKnobs->ATime);
     uprintf("MTime: %f\n", iKnobs->MTime);
@@ -53,4 +80,38 @@ void printKnobs(MFX_knobs_t* iKnobs) {
     uprintf("mag_orientation: %s\n", iKnobs->mag_orientation);
     uprintf("output_type: %d\n", iKnobs->output_type);
     uprintf("start_automatic_gbias_calculation: %d\n", iKnobs->start_automatic_gbias_calculation);
+}
+
+// following added to prevent linker errors. idk why the lib doesn't have these
+
+/**
+ * @brief  Load calibration parameter from memory
+ * @param  dataSize length ot the data
+ * @param  data pointer to the data
+ * @retval (1) fail, (0) success
+ */
+unsigned int *fx_buf = NULL;
+char MotionFX_LoadMagCalFromNVM(unsigned short int dataSize, unsigned int *data) {
+    uprintf("MotionFX_LoadMagCalFromNVM data size %d\n", dataSize);
+    fx_buf = (unsigned int *)malloc(dataSize);
+    if (fx_buf == NULL) {
+        return (char)0;
+    }
+    memcpy(fx_buf, data, dataSize);
+    return (char)1;
+}
+
+/**
+ * @brief  Save calibration parameter to memory
+ * @param  dataSize length ot the data
+ * @param  data pointer to the data
+ * @retval (1) fail, (0) success
+ */
+char MotionFX_SaveMagCalInNVM(unsigned short int dataSize, unsigned int *data) {
+    uprintf("MotionFX_SaveMagCalInNVM data size %d\n", dataSize);
+    if (fx_buf == NULL) {
+        return (char)0;
+    }
+    memcpy(data, fx_buf, dataSize);
+    return (char)1;
 }
