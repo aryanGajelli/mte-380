@@ -37,7 +37,7 @@ HAL_StatusTypeDef ICM_AccelGyroInit() {
 
     if (ICM_SelectBank(USER_BANK_2) != HAL_OK) return HAL_ERROR;
 
-    appliedSensitivity.gyroDPS = GYRO_DPS_250;
+    appliedSensitivity.gyroDPS = GYRO_DPS_500;
     static const double GYRO_SENS_250DPS = 131.0, GYRO_SENS_500DPS = 65.5,
                         GYRO_SENS_1000DPS = 32.8, GYRO_SENS_2000DPS = 16.4;
     switch (appliedSensitivity.gyroDPS) {
