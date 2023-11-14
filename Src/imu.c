@@ -112,7 +112,7 @@ HAL_StatusTypeDef ICM_MagnetometerInit() {
     ICM_WriteOneByte(I2C_MST_CTRL_REG, I2C_MST_CLK_400kHz);
 
     // set magnetometer data rate to 1.1kHz/ (2^3) = 136 Hz, page 68
-    data = 3;
+    data = 4;
     ICM_WriteOneByte(I2C_MST_ODR_CONFIG_REG, data);
 
     // Reset AK8963
@@ -296,8 +296,8 @@ void ICM_ConvertRawGyro(vector3_t *raw, vector3_t *gyro) {
  * @brief Convert raw mag data to uT
  */
 void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag) {
-    static const vector3_t minMag = {-54.150, -17.100, 3.750},
-                           maxMag = {13.500,       52.650,  76.800};
+    static const vector3_t minMag = {-55.200, -20.700, -1.200},
+                           maxMag = {21.000, 61.350, 84.000};
     mag->x = raw->x * appliedSensitivity.magSensitivity - (minMag.x + maxMag.x) / 2;
     mag->y = raw->y * appliedSensitivity.magSensitivity - (minMag.y + maxMag.y) / 2;
     mag->z = raw->z * appliedSensitivity.magSensitivity - (minMag.z + maxMag.z) / 2;
@@ -306,7 +306,8 @@ void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag) {
 /**
  * @brief Read the Accelerometer and Gyroscope data from ICM20948
  * @param accel_data: pointer to array of 3 floats to store the accelerometer data
- * @param gyro_data: pointer to array of 3 floats to store the gyroscope data
+ * @param gyro_data: pointer to array of 3 floats to 
+ * store the gyroscope data
  */
 HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     static const size_t NUM_BYTES = ACCEL_GYRO_END_REG - ACCEL_GYRO_START_REG + 1;

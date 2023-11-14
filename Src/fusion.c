@@ -5,7 +5,7 @@
 #include "motion_fx.h"
 #include <string.h>
 #define MFX_STR_LENG 35
-#define ENABLE_9X 1
+#define ENABLE_9X 0
 
 void runMagCal();
 
@@ -30,7 +30,7 @@ HAL_StatusTypeDef fusionInit(void) {
     printKnobs(&iKnobs);
     MotionFX_enable_6X(MFX_ENGINE_DISABLE);
     MotionFX_enable_9X(MFX_ENGINE_DISABLE);
-    runMagCal();
+    // runMagCal();
 
     if (ENABLE_9X) {
         MotionFX_enable_9X(MFX_ENGINE_ENABLE);
@@ -57,10 +57,12 @@ void runMagCal() {
         MotionFX_MagCal_getParams(&mag_cal_out);
         if (mag_cal_out.cal_quality == MFX_MAGCALGOOD) {
             uprintf("MagCal quality: %d\n", mag_cal_out.cal_quality);
+            uprintf("Mag HI Bias: %.3f, %.3f, %.3f\n", mag_cal_out.hi_bias[0], mag_cal_out.hi_bias[1], mag_cal_out.hi_bias[2]);
             break;
         }
         HAL_Delay(10);
     }
+    
 }
 
 void printKnobs(MFX_knobs_t *iKnobs) {
@@ -94,11 +96,10 @@ void printKnobs(MFX_knobs_t *iKnobs) {
 unsigned int *fx_buf = NULL;
 char MotionFX_LoadMagCalFromNVM(unsigned short int dataSize, unsigned int *data) {
     uprintf("MotionFX_LoadMagCalFromNVM data size %d\n", dataSize);
-    fx_buf = (unsigned int *)malloc(dataSize);
     if (fx_buf == NULL) {
         return (char)0;
     }
-    memcpy(fx_buf, data, dataSize);
+    memcpy(data, fx_buf, dataSize);
     return (char)1;
 }
 
@@ -110,9 +111,10 @@ char MotionFX_LoadMagCalFromNVM(unsigned short int dataSize, unsigned int *data)
  */
 char MotionFX_SaveMagCalInNVM(unsigned short int dataSize, unsigned int *data) {
     uprintf("MotionFX_SaveMagCalInNVM data size %d\n", dataSize);
+    fx_buf = (unsigned int *)malloc(dataSize);
     if (fx_buf == NULL) {
         return (char)0;
     }
-    memcpy(data, fx_buf, dataSize);
+    memcpy(fx_buf, data, dataSize);
     return (char)1;
 }

@@ -3,6 +3,7 @@
 #include "bsp.h"
 #include "debug.h"
 #include "main.h"
+#include "mathUtils.h"
 
 uint32_t motorARR;
 HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle) {
