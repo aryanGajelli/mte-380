@@ -1,9 +1,10 @@
 #include "fusion.h"
 
+#include <string.h>
+
 #include "debug.h"
 #include "imu.h"
 #include "motion_fx.h"
-#include <string.h>
 #define MFX_STR_LENG 35
 #define ENABLE_9X 0
 
@@ -21,13 +22,12 @@ HAL_StatusTypeDef fusionInit(void) {
     uprintf("MotionFX version: %s\n", lib_version);
 
     MotionFX_getKnobs(&iKnobs);
-    iKnobs.LMode = 2;
+    iKnobs.LMode = 0;
     iKnobs.modx = 1;
     memcpy(iKnobs.mag_orientation, "ned", 4);
     iKnobs.output_type = MFX_ENGINE_OUTPUT_ENU;
-    iKnobs.start_automatic_gbias_calculation = 1;
-    MotionFX_setKnobs(&iKnobs);
     printKnobs(&iKnobs);
+    MotionFX_setKnobs(&iKnobs);
     MotionFX_enable_6X(MFX_ENGINE_DISABLE);
     MotionFX_enable_9X(MFX_ENGINE_DISABLE);
     // runMagCal();
@@ -62,7 +62,6 @@ void runMagCal() {
         }
         HAL_Delay(10);
     }
-    
 }
 
 void printKnobs(MFX_knobs_t *iKnobs) {
@@ -117,4 +116,22 @@ char MotionFX_SaveMagCalInNVM(unsigned short int dataSize, unsigned int *data) {
     }
     memcpy(fx_buf, data, dataSize);
     return (char)1;
+}
+
+void fusionGetOutputs(MFX_output_t *data_out, IMUData_T imuData, IMUData_T prevImuData) {
+    static MFX_input_t data_in;
+    data_in.gyro[0] = imuData.gyro.x;
+    data_in.gyro[1] = imuData.gyro.y;
+    data_in.gyro[2] = imuData.gyro.z;
+    data_in.acc[0] = imuData.accel.x / 9.81;
+    data_in.acc[1] = imuData.accel.y / 9.81;
+    data_in.acc[2] = imuData.accel.z / 9.81;
+    // data_in.mag[0] = imuData.mag.x / 50;
+    // data_in.mag[1] = imuData.mag.y / 50;
+    // data_in.mag[2] = imuData.mag.z / 50;
+
+    float dT = (imuData.timestamp - prevImuData.timestamp) / 1000.;
+
+    MotionFX_propagate(data_out, &data_in, &dT);
+    MotionFX_update(data_out, &data_in, &dT, NULL);
 }
