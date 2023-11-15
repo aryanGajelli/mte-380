@@ -1,9 +1,12 @@
 #include "encoders.h"
 
 #include "bsp.h"
+#include "cmsis_os.h"
 #include "debug.h"
 #include "main.h"
+#include "odometry.h"
 #include "stm32f4xx_hal.h"
+#include "arm_math.h"
 
 volatile Encoder_T encoderLeft;
 volatile Encoder_T encoderRight;
@@ -25,9 +28,13 @@ void encoderUpdate(Encoder_T *encoder) {
 
     uint32_t counter = __HAL_TIM_GET_COUNTER(htim);
     uint32_t arr = __HAL_TIM_GET_AUTORELOAD(htim);
+
     encoder->ticks = dir * (counter + encoder->overflow * arr);
-    encoder->ticks_per_s = 1000*(encoder->ticks - encoder->prevTicks) / (float)(timeStamp - encoder->timeStamp);
-     
+    encoder->ticks_per_s = 1000 * (encoder->ticks - encoder->prevTicks) / (float)(timeStamp - encoder->timeStamp);
+#define TICKS_PER_REVOLUTION 540
+#define WHEEL_DIAMETER 42  // mm
+#define ENCODER_DISTANCE_PER_TICK (WHEEL_DIAMETER * PI / TICKS_PER_REVOLUTION)
+    encoder->dist = encoder->ticks * ENCODER_DISTANCE_PER_TICK;
     encoder->timeStamp = timeStamp;
 }
 
@@ -36,6 +43,7 @@ void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim) {
 
     uint32_t counter = __HAL_TIM_GET_COUNTER(htim);
     uint32_t cc2 = __HAL_TIM_GET_COMPARE(htim, TIM_CHANNEL_2);
+
     encoder->overflow += (cc2 > counter) - (cc2 < counter);
 }
 
