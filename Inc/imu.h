@@ -40,7 +40,7 @@ HAL_StatusTypeDef ICM_SetGyroOffset(vector3_t offset);
 void ICM_ConvertRawAccel(vector3_t *raw, vector3_t *accel);
 void ICM_ConvertRawGyro(vector3_t *raw, vector3_t *gyro);
 void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag);
-HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro);
+HAL_StatusTypeDef ICM_ReadAccelGyro(IMUData_T *data);
 HAL_StatusTypeDef ICM_ReadMag(vector3_t *mag);
 HAL_StatusTypeDef ICM_Read(IMUData_T *data);
 HAL_StatusTypeDef ICM_CalibrateGyro();

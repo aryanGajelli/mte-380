@@ -49,6 +49,8 @@
 /* USER CODE END Variables */
 osThreadId mainTaskNameHandle;
 osThreadId printTaskNameHandle;
+osThreadId poseTaskNameHandle;
+osMutexId poseMutexHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -57,6 +59,7 @@ osThreadId printTaskNameHandle;
 
 void mainTask(void const * argument);
 extern void printTask(void const * argument);
+extern void poseTask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -113,6 +116,10 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* definition and creation of poseMutex */
+  osMutexDef(poseMutex);
+  poseMutexHandle = osMutexCreate(osMutex(poseMutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -132,12 +139,16 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of mainTaskName */
-  osThreadDef(mainTaskName, mainTask, osPriorityHigh, 0, 3000);
+  osThreadDef(mainTaskName, mainTask, osPriorityHigh, 0, 1024);
   mainTaskNameHandle = osThreadCreate(osThread(mainTaskName), NULL);
 
   /* definition and creation of printTaskName */
   osThreadDef(printTaskName, printTask, osPriorityLow, 0, 256);
   printTaskNameHandle = osThreadCreate(osThread(printTaskName), NULL);
+
+  /* definition and creation of poseTaskName */
+  osThreadDef(poseTaskName, poseTask, osPriorityAboveNormal, 0, 2048);
+  poseTaskNameHandle = osThreadCreate(osThread(poseTaskName), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

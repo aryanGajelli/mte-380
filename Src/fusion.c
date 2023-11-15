@@ -22,7 +22,7 @@ HAL_StatusTypeDef fusionInit(void) {
     uprintf("MotionFX version: %s\n", lib_version);
 
     MotionFX_getKnobs(&iKnobs);
-    iKnobs.LMode = 0;
+    iKnobs.LMode = 1;
     iKnobs.modx = 1;
     memcpy(iKnobs.mag_orientation, "ned", 4);
     iKnobs.output_type = MFX_ENGINE_OUTPUT_ENU;
@@ -126,9 +126,9 @@ void fusionGetOutputs(MFX_output_t *data_out, IMUData_T imuData, IMUData_T prevI
     data_in.acc[0] = imuData.accel.x / 9.81;
     data_in.acc[1] = imuData.accel.y / 9.81;
     data_in.acc[2] = imuData.accel.z / 9.81;
-    // data_in.mag[0] = imuData.mag.x / 50;
-    // data_in.mag[1] = imuData.mag.y / 50;
-    // data_in.mag[2] = imuData.mag.z / 50;
+    data_in.mag[0] = imuData.mag.x / 50;
+    data_in.mag[1] = imuData.mag.y / 50;
+    data_in.mag[2] = imuData.mag.z / 50;
 
     float dT = (imuData.timestamp - prevImuData.timestamp) / 1000.;
 

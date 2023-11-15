@@ -164,6 +164,7 @@ HAL_StatusTypeDef ICM_SetClock(ClockSel_E clockSel) {
     if (expected_CurrUserBank != USER_BANK_0) {
         return HAL_ERROR;
     }
+
     return ICM_WriteOneByte(PWR_MGMT_1_REG, (uint8_t)clockSel);
 }
 
@@ -305,11 +306,10 @@ void ICM_ConvertRawMag(vector3_t *raw, vector3_t *mag) {
 
 /**
  * @brief Read the Accelerometer and Gyroscope data from ICM20948
- * @param accel_data: pointer to array of 3 floats to store the accelerometer data
- * @param gyro_data: pointer to array of 3 floats to 
+ * @param data: pointer to IMUData_T struct to store the data
  * store the gyroscope data
  */
-HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
+HAL_StatusTypeDef ICM_ReadAccelGyro(IMUData_T *data) {
     static const size_t NUM_BYTES = ACCEL_GYRO_END_REG - ACCEL_GYRO_START_REG + 1;
     uint8_t gotBytes[NUM_BYTES + 1];
     uint8_t *raw_data = gotBytes + 1;
@@ -320,6 +320,8 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
 
     if (ICM_ReadBytes(ACCEL_GYRO_START_REG, gotBytes, NUM_BYTES) != HAL_OK) return HAL_ERROR;
 
+    data->timestamp = HAL_GetTick();
+
     vector3_t rawAccel, rawGyro;
     rawAccel.x = (int16_t)((raw_data[0] << 8) | raw_data[1]);
     rawAccel.y = (int16_t)((raw_data[2] << 8) | raw_data[3]);
@@ -329,8 +331,8 @@ HAL_StatusTypeDef ICM_ReadAccelGyro(vector3_t *accel, vector3_t *gyro) {
     rawGyro.y = (int16_t)((raw_data[8] << 8) | raw_data[9]);
     rawGyro.z = (int16_t)((raw_data[10] << 8) | raw_data[11]);
 
-    ICM_ConvertRawAccel(&rawAccel, accel);
-    ICM_ConvertRawGyro(&rawGyro, gyro);
+    ICM_ConvertRawAccel(&rawAccel, &data->accel);
+    ICM_ConvertRawGyro(&rawGyro, &data->gyro);
     return HAL_OK;
 }
 
@@ -397,13 +399,13 @@ HAL_StatusTypeDef ICM_Read(IMUData_T *data) {
  */
 HAL_StatusTypeDef ICM_CalibrateGyro() {
     vector3_t gyroSum = {0, 0, 0};
-    vector3_t gyro;
+    IMUData_T data;
     for (int i = 0; i < 100; i++) {
-        if (ICM_ReadAccelGyro(NULL, &gyro) != HAL_OK)
+        if (ICM_ReadAccelGyro(&data) != HAL_OK)
             return HAL_ERROR;
-        gyroSum.x += gyro.x;
-        gyroSum.y += gyro.y;
-        gyroSum.z += gyro.z;
+        gyroSum.x += data.gyro.x;
+        gyroSum.y += data.gyro.y;
+        gyroSum.z += data.gyro.z;
         HAL_Delay(2);
     }
     // for some reason gotta divide by 4*count

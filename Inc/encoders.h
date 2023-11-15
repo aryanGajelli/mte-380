@@ -13,6 +13,8 @@ typedef struct Encoder_T {
     int32_t ticks;
     int32_t prevTicks;
     int32_t overflow;
+
+    double dist;
     Encoder_E encoderSide;
     uint32_t timeStamp;
 } Encoder_T;

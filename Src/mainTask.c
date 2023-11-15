@@ -16,6 +16,7 @@
 #include "mathUtils.h"
 #include "motion_fx.h"
 #include "motors.h"
+#include "odometry.h"
 #include "sensors.h"
 #include "servo.h"
 #include "stm32f4xx.h"
@@ -31,47 +32,36 @@ void mainTask(void *pvParameters) {
         Error_Handler();
     }
 
-    IMUData_T imuData;
-    IMUData_T prevImuData;
-    ICM_Read(&imuData);
-    MFX_output_t data_out;
-    while (1) {
-        prevImuData = imuData;
-        ICM_Read(&imuData);
-        fusionGetOutputs(&data_out, imuData, prevImuData);
-        if (isSDemoStarted) break;
-    }
-
     Encoder_T *encLeft = encoder_getInstance(ENCODER_LEFT);
     Encoder_T *encRight = encoder_getInstance(ENCODER_RIGHT);
+    while (!isSDemoStarted) {
+        vTaskDelay(10);
+    }
     // p-controlloer for angle
-    double target = 90;  // deg
-    double kp = 0.75, kd = 1;
-    float *q;
-    double prevError = target;
-    TickType_t xLastWakeTime = xTaskGetTickCount();
+    uint32_t dT = HAL_GetTick();
+    MFX_output_t data_out;
+
+    Pose_T pose = {.x = 0, .y = 0, .theta = 0};
+    double prevDistL = encLeft->dist, prevDistR = encRight->dist;
     while (1) {
-        prevImuData = imuData;
-        ICM_Read(&imuData);
-        fusionGetOutputs(&data_out, imuData, prevImuData);
+        dT = HAL_GetTick() - dT;
         encoderUpdate(encLeft);
         encoderUpdate(encRight);
 
-        double h = data_out.rotation_6X[0];
-        double error = target - h;
-        if (fabs(error) < 1) error = 0;
+        double dTheta = odometryGetDeltaHeading();
+        double dL = encLeft->dist - prevDistL;
+        double dR = encRight->dist - prevDistR;
+        double LR = (encLeft->dist + encRight->dist) / 2;
+        double d = (dL + dR) / 2;
+        pose.theta = odometryGetHeading();
+        pose.x += d * sin((pose.theta + dTheta/2) * PI / 180);
+        pose.y += - d * cos((pose.theta + dTheta/2) * PI / 180);
 
+        prevDistL = encLeft->dist;
+        prevDistR = encRight->dist;
 
-        double dc = kp * error + kd * (error - prevError);
-        if (dc > 100) dc = 100;
-        if (dc < -100) dc = -100;
-        // dc *= 0.6;
-        motorSetSpeed(MOTOR_LEFT, dc);
-        // motorSetSpeed(MOTOR_RIGHT, dc);
-        prevError = error;
+        uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
 
-        uprintf("%.3f %.3f %d %d\n", h, dc, encLeft->ticks, encRight->ticks);
-        vTaskDelayUntil(&xLastWakeTime, 25);
     }
 }
 
@@ -92,12 +82,15 @@ HAL_StatusTypeDef mainTaskInit() {
         Error_Handler();
     }
 
-    if (encodersInit() != HAL_OK) {
+    if (fusionInit() != HAL_OK) {
         Error_Handler();
     }
 
-    if (fusionInit() != HAL_OK) {
-        return HAL_ERROR;
+    if (odometryInit() != HAL_OK) {
+        Error_Handler();
+    }
+    if (encodersInit() != HAL_OK) {
+        Error_Handler();
     }
 
     return HAL_OK;
