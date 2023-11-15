@@ -7,6 +7,7 @@
 #include "arm_math.h"
 #include "bsp.h"
 #include "color_sensor.h"
+#include "control.h"
 #include "debug.h"
 #include "demo.h"
 #include "encoders.h"
@@ -34,15 +35,19 @@ void mainTask(void *pvParameters) {
 
     Encoder_T *encLeft = encoder_getInstance(ENCODER_LEFT);
     Encoder_T *encRight = encoder_getInstance(ENCODER_RIGHT);
+
     while (!isSDemoStarted) {
         vTaskDelay(10);
     }
-    // p-controlloer for angle
-    uint32_t dT = HAL_GetTick();
-    MFX_output_t data_out;
 
+    if (controlInit() != HAL_OK) {
+        Error_Handler();
+    }
+
+    uint32_t dT = HAL_GetTick();
     Pose_T pose = {.x = 0, .y = 0, .theta = 0};
     double prevDistL = encLeft->dist, prevDistR = encRight->dist;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     while (1) {
         dT = HAL_GetTick() - dT;
         encoderUpdate(encLeft);
@@ -54,14 +59,13 @@ void mainTask(void *pvParameters) {
         double LR = (encLeft->dist + encRight->dist) / 2;
         double d = (dL + dR) / 2;
         pose.theta = odometryGetHeading();
-        pose.x += d * sin((pose.theta + dTheta/2) * PI / 180);
-        pose.y += - d * cos((pose.theta + dTheta/2) * PI / 180);
+        pose.x += d * sin((pose.theta + dTheta / 2) * PI / 180);
+        pose.y += -d * cos((pose.theta + dTheta / 2) * PI / 180);
 
         prevDistL = encLeft->dist;
         prevDistR = encRight->dist;
-
-        uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
-
+        odometrySetPoseXY(pose);
+        vTaskDelayUntil(&xLastWakeTime, 10);
     }
 }
 

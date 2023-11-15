@@ -50,6 +50,7 @@
 osThreadId mainTaskNameHandle;
 osThreadId printTaskNameHandle;
 osThreadId poseTaskNameHandle;
+osThreadId controlTaskNameHandle;
 osMutexId poseMutexHandle;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -60,6 +61,7 @@ osMutexId poseMutexHandle;
 void mainTask(void const * argument);
 extern void printTask(void const * argument);
 extern void poseTask(void const * argument);
+extern void controlTask(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -68,18 +70,6 @@ void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackTy
 
 /* GetTimerTaskMemory prototype (linked to static allocation support) */
 void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize );
-
-/* Hook prototypes */
-void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
-
-/* USER CODE BEGIN 4 */
-__weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
-{
-   /* Run time stack overflow checking is performed if
-   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
-   called if a stack overflow is detected. */
-}
-/* USER CODE END 4 */
 
 /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
 static StaticTask_t xIdleTaskTCBBuffer;
@@ -147,8 +137,12 @@ void MX_FREERTOS_Init(void) {
   printTaskNameHandle = osThreadCreate(osThread(printTaskName), NULL);
 
   /* definition and creation of poseTaskName */
-  osThreadDef(poseTaskName, poseTask, osPriorityAboveNormal, 0, 2048);
+  osThreadDef(poseTaskName, poseTask, osPriorityNormal, 0, 1500);
   poseTaskNameHandle = osThreadCreate(osThread(poseTaskName), NULL);
+
+  /* definition and creation of controlTaskName */
+  osThreadDef(controlTaskName, controlTask, osPriorityNormal, 0, 512);
+  controlTaskNameHandle = osThreadCreate(osThread(controlTaskName), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

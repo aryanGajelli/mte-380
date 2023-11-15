@@ -2,6 +2,7 @@
 
 #include "FreeRTOS.h"
 #include "cmsis_os.h"
+#include "debug.h"
 #include "encoders.h"
 #include "fusion.h"
 #include "imu.h"
@@ -27,6 +28,13 @@ Pose_T odometryGetPose() {
     return pose;
 }
 
+void odometrySetPoseXY(Pose_T newPose) {
+    xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
+    pose.x = newPose.x;
+    pose.y = newPose.y;
+    xSemaphoreGive(poseMutexHandle);
+}
+
 float odometryGetDeltaHeading() {
     double dTheta = pose.theta - prevPose.theta;
     if (dTheta > 180) {
@@ -48,13 +56,16 @@ void odometryUpdate(IMUData_T imuData, IMUData_T prevImuData) {
     // taskENTER_CRITICAL();
 
     // taskEXIT_CRITICAL();
+    xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
     pose.theta = data_out.heading_6X;
+    xSemaphoreGive(poseMutexHandle);
 }
 
 void poseTask(void *pvParameters) {
     while (!isOdometryInit) {
         vTaskDelay(10);
     }
+    uprintf("poseTask\n");
 
     IMUData_T imuData;
     IMUData_T prevImuData;
@@ -68,6 +79,6 @@ void poseTask(void *pvParameters) {
 
         odometryUpdate(imuData, prevImuData);
         // vTaskDelay(10);
-        vTaskDelayUntil(&xLastWakeTime, 35);
+        vTaskDelayUntil(&xLastWakeTime, 40);
     }
 }
