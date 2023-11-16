@@ -26,6 +26,7 @@ HAL_StatusTypeDef fusionInit(void) {
     iKnobs.modx = 1;
     memcpy(iKnobs.mag_orientation, "ned", 4);
     iKnobs.output_type = MFX_ENGINE_OUTPUT_ENU;
+    iKnobs.start_automatic_gbias_calculation = 1;
     printKnobs(&iKnobs);
     MotionFX_setKnobs(&iKnobs);
     MotionFX_enable_6X(MFX_ENGINE_DISABLE);
@@ -120,15 +121,13 @@ char MotionFX_SaveMagCalInNVM(unsigned short int dataSize, unsigned int *data) {
 
 void fusionGetOutputs(MFX_output_t *data_out, IMUData_T imuData, IMUData_T prevImuData) {
     static MFX_input_t data_in;
-    data_in.gyro[0] = imuData.gyro.x;
-    data_in.gyro[1] = imuData.gyro.y;
-    data_in.gyro[2] = imuData.gyro.z;
+    static const GYRO_THRESHOLD_DPS = 0.1;
+    data_in.gyro[0] = fabs(imuData.gyro.x) > GYRO_THRESHOLD_DPS ? imuData.gyro.x : 0;
+    data_in.gyro[1] = fabs(imuData.gyro.y) > GYRO_THRESHOLD_DPS ? imuData.gyro.y : 0;
+    data_in.gyro[2] = fabs(imuData.gyro.z) > GYRO_THRESHOLD_DPS ? imuData.gyro.z : 0;
     data_in.acc[0] = imuData.accel.x / 9.81;
     data_in.acc[1] = imuData.accel.y / 9.81;
     data_in.acc[2] = imuData.accel.z / 9.81;
-    data_in.mag[0] = imuData.mag.x / 50;
-    data_in.mag[1] = imuData.mag.y / 50;
-    data_in.mag[2] = imuData.mag.z / 50;
 
     float dT = (imuData.timestamp - prevImuData.timestamp) / 1000.;
 

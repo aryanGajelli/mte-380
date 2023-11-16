@@ -35,9 +35,12 @@ void mainTask(void *pvParameters) {
 
     Encoder_T *encLeft = encoder_getInstance(ENCODER_LEFT);
     Encoder_T *encRight = encoder_getInstance(ENCODER_RIGHT);
-
+    uint32_t start = HAL_GetTick();
     while (!isSDemoStarted) {
-        vTaskDelay(10);
+        if (HAL_GetTick() - start > 7000) {
+            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        }
+        vTaskDelay(100);
     }
 
     if (controlInit() != HAL_OK) {
@@ -54,11 +57,16 @@ void mainTask(void *pvParameters) {
         encoderUpdate(encRight);
 
         double dTheta = odometryGetDeltaHeading();
+        
         double dL = encLeft->dist - prevDistL;
         double dR = encRight->dist - prevDistR;
         double LR = (encLeft->dist + encRight->dist) / 2;
         double d = (dL + dR) / 2;
         pose.theta = odometryGetHeading();
+        if (fabs(dTheta) > 160) {
+            pose.theta -= dTheta;
+        }
+
         pose.x += d * sin((pose.theta + dTheta / 2) * PI / 180);
         pose.y += -d * cos((pose.theta + dTheta / 2) * PI / 180);
 

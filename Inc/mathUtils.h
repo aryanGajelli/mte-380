@@ -14,6 +14,7 @@ typedef union vector3_t {
 } vector3_t;
 
 double map(double x, double a, double b, double c, double d);
+double dist(double x1, double y1, double x2, double y2);
 // typedef struct vector3_t {
 //     float x;
 //     float y;
