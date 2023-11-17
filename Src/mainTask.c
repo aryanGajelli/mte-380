@@ -68,7 +68,7 @@ void mainTask(void *pvParameters) {
         }
 
         pose.x += d * sin((pose.theta + dTheta / 2) * PI / 180);
-        pose.y += -d * cos((pose.theta + dTheta / 2) * PI / 180);
+        pose.y += d * cos((pose.theta + dTheta / 2) * PI / 180);
 
         prevDistL = encLeft->dist;
         prevDistR = encRight->dist;

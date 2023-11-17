@@ -4,4 +4,5 @@
 #include "stm32f4xx_hal.h"
 HAL_StatusTypeDef controlInit();
 void controlTurnToHeading(double targetDeg);
-#endif // __CONTROL_H__
+void controlMoveForward(double targetDist);
+#endif  // __CONTROL_H__

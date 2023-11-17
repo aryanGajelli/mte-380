@@ -10,15 +10,10 @@
 #include "stm32f4xx_hal.h"
 #include "task.h"
 
-Encoder_T *encLeft;
-Encoder_T *encRight;
-
 Pose_T pose;
 Pose_T prevPose;
 char isOdometryInit = 0;
 HAL_StatusTypeDef odometryInit() {
-    Encoder_T *encLeft = encoder_getInstance(ENCODER_LEFT);
-    Encoder_T *encRight = encoder_getInstance(ENCODER_RIGHT);
     pose = (Pose_T){0, 0, 0};
     isOdometryInit = 1;
     return HAL_OK;

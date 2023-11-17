@@ -187,8 +187,8 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32F401RETx_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -l:MotionFX_CM4F_wc32_ot_hard.a
-LIBDIR = -L"Middlewares/ST/STM32_MotionFX_Library/Lib"
+LIBS = -lc -lm -lnosys -l:MotionFX_CM4F_wc32_ot_hard.a -l:libarm_cortexM4lf_math.a
+LIBDIR = -L"Middlewares/ST/STM32_MotionFX_Library/Lib" -L"Middlewares/ST/ARM/DSP/Lib"
 LDFLAGS = $(MCU) -specs=nosys.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -Wl,--no-warn-rwx-segments -u _printf_float
 
 # default action: build all

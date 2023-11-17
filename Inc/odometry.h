@@ -4,11 +4,15 @@
 #include "cmsis_os.h"
 #include "imu.h"
 #include "stm32f4xx_hal.h"
+#include "arm_math.h"
 typedef struct Pose_T {
     float x;
     float y;
     float theta;
 } Pose_T;
+
+#define WHEEL_DIAMETER 42
+#define WHEEL_CIRCUMFERENCE (WHEEL_DIAMETER * PI)
 
 extern osMutexId poseMutexHandle;
 HAL_StatusTypeDef odometryInit(void);
