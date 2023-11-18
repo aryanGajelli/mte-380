@@ -9,14 +9,19 @@ typedef struct Pose_T {
     float x;
     float y;
     float theta;
+    float dTheta;
 } Pose_T;
 
 #define WHEEL_DIAMETER 42
 #define WHEEL_CIRCUMFERENCE (WHEEL_DIAMETER * PI)
+#define TICKS_PER_REVOLUTION 540
+#define ENCODER_DISTANCE_PER_TICK (WHEEL_CIRCUMFERENCE / TICKS_PER_REVOLUTION)
+#define WHEEL_TO_WHEEL_DISTANCE 105
 
 extern osMutexId poseMutexHandle;
 HAL_StatusTypeDef odometryInit(void);
 Pose_T odometryGetPose();
+void odometrySetPose(Pose_T newPose);
 double odometryGet2DDist(Pose_T a, Pose_T b);
 double odometryGet2DAngle(Pose_T a, Pose_T b);
 double odometryDot(Pose_T a, Pose_T b);

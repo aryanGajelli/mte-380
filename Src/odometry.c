@@ -23,6 +23,19 @@ Pose_T odometryGetPose() {
     return pose;
 }
 
+void odometrySetPose(Pose_T newPose) {
+    xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
+    pose = newPose;
+    xSemaphoreGive(poseMutexHandle);
+}
+
+void odometrySetPoseXY(Pose_T newPose) {
+    xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
+    pose.x = newPose.x;
+    pose.y = newPose.y;
+    xSemaphoreGive(poseMutexHandle);
+}
+
 double odometryGet2DDist(Pose_T a, Pose_T b) {
     double dx = a.x - b.x;
     double dy = a.y - b.y;
@@ -59,18 +72,12 @@ double odometryOriginAngleDiff(Pose_T a, Pose_T b) {
 
 /**
  * @brief Computes a sort of distance error while providing negative distance
-*/
+ */
 double odometryDotError(Pose_T a, Pose_T b) {
     b = (Pose_T){a.x - b.x, a.y - b.y, 0};
     double error = odometryDot(a, b);
     error = sign(error) * sqrt(sign(error) * error);
     return error;
-}
-void odometrySetPoseXY(Pose_T newPose) {
-    xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
-    pose.x = newPose.x;
-    pose.y = newPose.y;
-    xSemaphoreGive(poseMutexHandle);
 }
 
 float odometryGetDeltaHeading() {
@@ -111,11 +118,11 @@ void poseTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     while (1) {
         prevImuData = imuData;
-        ICM_ReadAccelGyro(&imuData);
+        // ICM_ReadAccelGyro(&imuData);
         // encoderUpdate(encLeft);
         // encoderUpdate(encRight);
 
-        odometryUpdate(imuData, prevImuData);
+        // odometryUpdate(imuData, prevImuData);
         // vTaskDelay(10);
         vTaskDelayUntil(&xLastWakeTime, 40);
     }

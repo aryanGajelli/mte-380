@@ -61,12 +61,16 @@ void controlTask(void *pvParameters) {
     // controlTestPickup();
     // controlTestSquare();
 
-    controlGoToPoint((Pose_T){.x = 10, .y = 40, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 10, .y = 60, .theta = 0});
+    // controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 150, .y = 150, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 150, .y = 0, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 0, .y = 0, .theta = 0});
     double line;
     while (1) {
         Pose_T pose = odometryGetPose();
+
         uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
+        vTaskDelay(10);
     }
 }
 
@@ -165,7 +169,7 @@ void controlLineFollowing() {
 void controlTurnToHeading(double targetDeg) {
     // targetDeg = -targetDeg;
     static const double ACCEPTABLE_ERROR_DEG = 1;
-    double kp = 0.5, kd = 0.5, ki = 0.01;
+    double kp = 0.7, kd = 0.5, ki = 0.01;
     double error = targetDeg - odometryGetPose().theta;
     if (error > 180)
         error -= 360;
@@ -246,8 +250,8 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
         prevError = error;
         prevErrorAng = errorAng;
 
-        double speedR = -speedLin - angSpeed;
-        double speedL = -speedLin + angSpeed;
+        double speedL = speedLin - angSpeed;
+        double speedR = speedLin + angSpeed;
         if (speedR > 100) speedR = 100;
         if (speedR < -100) speedR = -100;
 
@@ -266,15 +270,20 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
 
 void controlGoToPoint(Pose_T targetPose) {
     static const double ACCEPTABLE_ERROR = 5;
-    Pose_T pose = odometryGetPose();
-    double targetTheta = odometryGet2DAngle(targetPose, pose);
-    controlTurnToHeading(targetTheta);
+    Pose_T startPose = odometryGetPose();
 
-    double error = odometryDotError(targetPose, pose);
+    double targetTheta = odometryGet2DAngle(targetPose, startPose);
+    controlTurnToHeading(targetTheta);
+    // recenters the targetPose to the robot's current position
+    targetPose.x -= startPose.x;
+    targetPose.y -= startPose.y;
+    double error = odometryDotError(targetPose, startPose);
     double prevError = error;
     double kp = 0.5, kd = 0.5, ki = 0.00;
     while (fabs(error) > ACCEPTABLE_ERROR) {
-        pose = odometryGetPose();
+        Pose_T pose = odometryGetPose();
+        pose.x -= startPose.x;
+        pose.y -= startPose.y;
         error = odometryDotError(targetPose, pose);
         double speed = kp * error + kd * (error - prevError) + ki * error;
         prevError = error;
@@ -284,7 +293,7 @@ void controlGoToPoint(Pose_T targetPose) {
 
         uprintf("%.3f %.3f %.3f %.3f\n", error, pose.x, pose.y, pose.theta);
 
-        // vTaskDelay(10);
+        vTaskDelay(1);
     }
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
