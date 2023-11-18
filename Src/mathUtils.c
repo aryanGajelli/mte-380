@@ -2,12 +2,20 @@
 #include "arm_math.h"
 #include "debug.h"
 
+double sign(double x) {
+    return x < 0 ? -1 : 1;
+}
+
 double map(double x, double a, double b, double c, double d) {
     return (x - a) / (b - a) * (d - c) + c;
 }
 
 double dist(double x1, double y1, double x2, double y2) {
     return sqrt((x2- x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+}
+
+double clamp(double x, double a, double b) {
+    return x < a ? a : (x > b ? b : x);
 }
 
 void printMatrix(arm_matrix_instance_f32 mat){

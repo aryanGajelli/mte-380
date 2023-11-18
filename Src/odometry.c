@@ -23,6 +23,49 @@ Pose_T odometryGetPose() {
     return pose;
 }
 
+double odometryGet2DDist(Pose_T a, Pose_T b) {
+    double dx = a.x - b.x;
+    double dy = a.y - b.y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+double odometryGet2DAngle(Pose_T a, Pose_T b) {
+    return atan2(a.x - b.x, a.y - b.y) * 180 / PI;
+}
+
+double odometryDot(Pose_T a, Pose_T b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+double odometryCross(Pose_T a, Pose_T b) {
+    return a.x * b.y - a.y * b.x;
+}
+
+double odometryOriginAngle(Pose_T a) {
+    return atan2(a.y, a.x) * 180 / PI;
+}
+
+double odometryOriginAngleDiff(Pose_T a, Pose_T b) {
+    double angleA = odometryOriginAngle(a);
+    double angleB = odometryOriginAngle(b);
+    double angleDiff = angleA - angleB;
+    // if (angleDiff > 180) {
+    //     angleDiff -= 360;
+    // } else if (angleDiff < -180) {
+    //     angleDiff += 360;
+    // }
+    return angleDiff;
+}
+
+/**
+ * @brief Computes a sort of distance error while providing negative distance
+*/
+double odometryDotError(Pose_T a, Pose_T b) {
+    b = (Pose_T){a.x - b.x, a.y - b.y, 0};
+    double error = odometryDot(a, b);
+    error = sign(error) * sqrt(sign(error) * error);
+    return error;
+}
 void odometrySetPoseXY(Pose_T newPose) {
     xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
     pose.x = newPose.x;

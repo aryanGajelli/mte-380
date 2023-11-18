@@ -17,6 +17,11 @@ typedef struct Pose_T {
 extern osMutexId poseMutexHandle;
 HAL_StatusTypeDef odometryInit(void);
 Pose_T odometryGetPose();
+double odometryGet2DDist(Pose_T a, Pose_T b);
+double odometryGet2DAngle(Pose_T a, Pose_T b);
+double odometryDot(Pose_T a, Pose_T b);
+double odometryOriginAngleDiff(Pose_T a, Pose_T b);
+double odometryDotError(Pose_T a, Pose_T b);
 void odometrySetPoseXY(Pose_T newPose);
 float odometryGetDeltaHeading();
 double odometryGetHeading();

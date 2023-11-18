@@ -5,6 +5,7 @@
 #include "color_sensor.h"
 #include "debug.h"
 #include "encoders.h"
+#include "mathUtils.h"
 #include "motors.h"
 #include "odometry.h"
 #include "sensors.h"
@@ -41,7 +42,7 @@ void controlTask(void *pvParameters) {
     // double angle = atan2(609, 609) * 180 / PI;
     // uprintf("angle: %.3f\n", angle);
     // while(1){vTaskDelay(1000);}
-    
+
     // HAL_Delay(200);
     // controlMoveForward(100, 0.5);
     // HAL_Delay(200);
@@ -58,7 +59,10 @@ void controlTask(void *pvParameters) {
 
     // controlLineFollowing();
     // controlTestPickup();
-    controlTestSquare();
+    // controlTestSquare();
+
+    controlGoToPoint((Pose_T){.x = 10, .y = 40, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 10, .y = 60, .theta = 0});
     double line;
     while (1) {
         Pose_T pose = odometryGetPose();
@@ -66,7 +70,7 @@ void controlTask(void *pvParameters) {
     }
 }
 
-void controlTestPickup(){
+void controlTestPickup() {
     controlMoveForward(350, 1);
     HAL_Delay(200);
     controlTurnToHeading(90);
@@ -78,7 +82,8 @@ void controlTestPickup(){
     HAL_Delay(150);
     controlMoveForward(-100, 0.7);
 }
-void controlTestSquare(){
+
+void controlTestSquare() {
     controlMoveForward(150, 1);
     HAL_Delay(200);
     controlTurnToHeading(90);
@@ -95,6 +100,7 @@ void controlTestSquare(){
     HAL_Delay(200);
     controlTurnToHeading(0);
 }
+
 void controlApprochLego() {
     double kp = 0.5, kd = 0, ki = 0;
     double target = .5;
@@ -190,8 +196,8 @@ void controlTurnToHeading(double targetDeg) {
         if (turnSpeed > 100) turnSpeed = 100;
         if (turnSpeed < -100) turnSpeed = -100;
 
-        motorSetSpeed(MOTOR_LEFT, dir * turnSpeed);
-        motorSetSpeed(MOTOR_RIGHT, dir * -turnSpeed);
+        motorSetSpeed(MOTOR_LEFT, dir * -turnSpeed);
+        motorSetSpeed(MOTOR_RIGHT, dir * turnSpeed);
         uprintf("t: %.3f %.3f %.3f\n", error, turnSpeed, pose.theta);
     }
 
@@ -209,10 +215,10 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
     double error = targetDist - dist;
     double errorAng = targetTheta - odometryGetPose().theta;
     if (errorAng > 180) {
-            errorAng -= 360;
-        } else if (errorAng < -180) {
-            errorAng += 360;
-        }
+        errorAng -= 360;
+    } else if (errorAng < -180) {
+        errorAng += 360;
+    }
     double prevErrorAng = errorAng;
     if (fabs(error) < ACCEPTABLE_ERROR) return;
     double prevError = error;
@@ -250,7 +256,7 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
 
         motorSetSpeed(MOTOR_LEFT, speedMultiplier * speedL);
         motorSetSpeed(MOTOR_RIGHT, speedMultiplier * speedR);
-        
+
         uprintf("t: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose.x, pose.y, pose.theta);
     }
 
@@ -258,7 +264,33 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
     motorHardStop(MOTOR_RIGHT);
 }
 
-void controlGoToPose(Pose_T targetPose) {
+void controlGoToPoint(Pose_T targetPose) {
+    static const double ACCEPTABLE_ERROR = 5;
+    Pose_T pose = odometryGetPose();
+    double targetTheta = odometryGet2DAngle(targetPose, pose);
+    controlTurnToHeading(targetTheta);
+
+    double error = odometryDotError(targetPose, pose);
+    double prevError = error;
+    double kp = 0.5, kd = 0.5, ki = 0.00;
+    while (fabs(error) > ACCEPTABLE_ERROR) {
+        pose = odometryGetPose();
+        error = odometryDotError(targetPose, pose);
+        double speed = kp * error + kd * (error - prevError) + ki * error;
+        prevError = error;
+        speed = clamp(speed, -100, 100);
+        motorSetSpeed(MOTOR_LEFT, speed);
+        motorSetSpeed(MOTOR_RIGHT, speed);
+
+        uprintf("%.3f %.3f %.3f %.3f\n", error, pose.x, pose.y, pose.theta);
+
+        // vTaskDelay(10);
+    }
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+}
+
+void controlGoToPoseRASETE(Pose_T targetPose) {
     static const double ACCEPTABLE_ERROR = 1;
     Pose_T pose = odometryGetPose();
     double thetaError = targetPose.theta - pose.theta;
