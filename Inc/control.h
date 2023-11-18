@@ -4,5 +4,6 @@
 #include "stm32f4xx_hal.h"
 HAL_StatusTypeDef controlInit();
 void controlTurnToHeading(double targetDeg);
-void controlMoveForward(double targetDist);
+void controlMoveForward(double targetDist, double speedMultiplier);
+void controlApprochLego();
 #endif  // __CONTROL_H__
