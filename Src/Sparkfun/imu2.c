@@ -5,6 +5,8 @@
 
 #include "ICM20948_register.h"
 #include "ICM20948_spi.h"
+#include "Sparkfun/AK09916_ENUMERATIONS.h"
+#include "Sparkfun/AK09916_REGISTERS.h"
 #include "Sparkfun/ICM_20948_C.h"
 #include "Sparkfun/ICM_20948_REGISTERS.h"
 #include "debug.h"
@@ -34,25 +36,32 @@ HAL_StatusTypeDef imuInit() {
     ICM_20948_low_power(&imu, false);
     ICM_20948_set_clock_source(&imu, ICM_20948_Clock_Auto);
     imuAccelGyroInit();
+    uprintf("mag init: %d\n", magInit());
     uint8_t data;
     ICM_20948_set_bank(&imu, 0);
     ICM_20948_execute_r(&imu, AGB0_REG_PWR_MGMT_1, &data, 1);  // reset AK09916
     uprintf("swreset: %02x\n", data);
-
+    
     return HAL_OK;
 }
 
 ICM_20948_Status_e imuAccelGyroInit() {
+    ICM_20948_Status_e retval = ICM_20948_Stat_Ok;
     ICM_20948_InternalSensorID_bm sensors = ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr;
-    ICM_20948_set_sample_mode(&imu, sensors, ICM_20948_Sample_Mode_Continuous);
-    ICM_20948_set_full_scale(&imu, sensors, (ICM_20948_fss_t){.a = gpm2, .g = dps250});
-    ICM_20948_set_dlpf_cfg(&imu, sensors, (ICM_20948_dlpcfg_t){.a = acc_d473bw_n499bw, .g = gyr_d361bw4_n376bw5});
-    ICM_20948_enable_dlpf(&imu, sensors, false);
-    return ICM_20948_Stat_Ok;
-}
 
-ICM_20948_Device_t *imuGet() {
-    return &imu;
+    retval = ICM_20948_set_sample_mode(&imu, sensors, ICM_20948_Sample_Mode_Continuous);
+    if (retval != ICM_20948_Stat_Ok) return retval;
+
+    retval = ICM_20948_set_full_scale(&imu, sensors, (ICM_20948_fss_t){.a = gpm2, .g = dps250});
+    if (retval != ICM_20948_Stat_Ok) return retval;
+
+    retval = ICM_20948_set_dlpf_cfg(&imu, sensors, (ICM_20948_dlpcfg_t){.a = acc_d473bw_n499bw, .g = gyr_d361bw4_n376bw5});
+    if (retval != ICM_20948_Stat_Ok) return retval;
+
+    retval = ICM_20948_enable_dlpf(&imu, sensors, false);
+    if (retval != ICM_20948_Stat_Ok) return retval;
+
+    return retval;
 }
 
 ICM_20948_Status_e spi_write(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user) {
