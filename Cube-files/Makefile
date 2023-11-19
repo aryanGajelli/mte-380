@@ -159,9 +159,11 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_MotionTL_Library/Inc \
 -IMiddlewares/ST/ARM/DSP/Inc
 
-C_SOURCES += $(wildcard ../Src/*.c)
-C_INCLUDES += -I"../Inc" -I"../Lib/backtrace/include"
-AS_SOURCES += $(wildcard ../Src/*.s)
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
+
+C_SOURCES += $(wildcard ../Src/*.c) $(wildcard ../Src/*/*.c)
+C_INCLUDES += -I$(wildcard ../Inc/) -I$(wildcard ../Inc/*/) -I"../Lib/backtrace/include"
+AS_SOURCES += $(wildcard ../Src/*/*.s) $(wildcard ../Src/*.s)
 AS_INCLUDES += -I"../Inc"
 
 # compile gcc flags

@@ -24,54 +24,27 @@ HAL_StatusTypeDef controlInit() {
 
 void controlTestSquare();
 void controlTestPickup();
+void controlTestSquareAbsolute();
 void controlTask(void *pvParameters) {
     while (!isControlInit) {
         vTaskDelay(10);
     }
     uprintf("controlTask\n");
 
-    // controlTurnToHeading(90);
-    // controlTurnToHeading(45);
-    // controlTurnToHeading(95);
-    // controlGoToPose((Pose_T){.x = 0, .y = 100, .theta = 0});
+    double line;
+    while (1) {
+        // Pose_T pose = odometryGetPose();
 
-    // controlMoveForward(50);
+        // uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
+        vTaskDelay(10);
+    }
+}
 
-    // controlMoveForward(-50);
-    // controlApprochLego();
-    // double angle = atan2(609, 609) * 180 / PI;
-    // uprintf("angle: %.3f\n", angle);
-    // while(1){vTaskDelay(1000);}
-
-    // HAL_Delay(200);
-    // controlMoveForward(100, 0.5);
-    // HAL_Delay(200);
-    // controlTurnToHeading(90);
-    // HAL_Delay(200);
-    // controlMoveForward(150, 0.7);
-    // // controlMoveForward(100);
-    // servoSetAngle(CLAW_CLOSED_ANGLE);
-    // HAL_Delay(150);
-
-    // controlMoveForward(-100, 0.7);
-    // controlTurnToHeading(110);
-    // con
-
-    // controlLineFollowing();
-    // controlTestPickup();
-    // controlTestSquare();
-
-    // controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0});
+void controlTestSquareAbsolute() {
+    controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0});
     controlGoToPoint((Pose_T){.x = 150, .y = 150, .theta = 0});
     controlGoToPoint((Pose_T){.x = 150, .y = 0, .theta = 0});
     controlGoToPoint((Pose_T){.x = 0, .y = 0, .theta = 0});
-    double line;
-    while (1) {
-        Pose_T pose = odometryGetPose();
-
-        uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
-        vTaskDelay(10);
-    }
 }
 
 void controlTestPickup() {
