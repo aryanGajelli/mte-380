@@ -10,18 +10,21 @@
 #include "Sparkfun/ICM_20948_C.h"
 #include "Sparkfun/ICM_20948_REGISTERS.h"
 #include "debug.h"
+#include "dmp.h"
 #include "imu.h"
+#include "mag.h"
 #include "stm32f4xx_hal.h"
 
 ICM_20948_Device_t imu;
 ICM_20948_Serif_t _serif;
+ICM_20948_fss_t fss;
 
 ICM_20948_Status_e spi_write(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user);
 ICM_20948_Status_e spi_read(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user);
 ICM_20948_Status_e imuAccelGyroInit();
 
-ICM_20948_fss_t fss;
 HAL_StatusTypeDef imuInit() {
+    ICM_20948_Status_e retval = ICM_20948_Stat_Ok;
     ICM_20948_init_struct(&imu);
     _serif = (ICM_20948_Serif_t){.read = spi_read, .write = spi_write, .user = NULL};
     imu._serif = &_serif;
@@ -31,28 +34,56 @@ HAL_StatusTypeDef imuInit() {
         return HAL_ERROR;
     }
 
-    ICM_20948_sw_reset(&imu);
+    retval = ICM_20948_sw_reset(&imu);
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("ICM_20948_sw_reset failed with %0x\n", retval);
+        return HAL_ERROR;
+    }
     HAL_Delay(50);
 
-    ICM_20948_sleep(&imu, false);
-    ICM_20948_low_power(&imu, false);
-    ICM_20948_set_clock_source(&imu, ICM_20948_Clock_Auto);
-    if (imuAccelGyroInit() != ICM_20948_Stat_Ok) {
-        uprintf("imuAccelGyroInit failed\n");
+    retval = ICM_20948_sleep(&imu, false);
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("ICM_20948_sleep failed with %0x\n", retval);
         return HAL_ERROR;
     }
-    
-    if (magInit() != ICM_20948_Stat_Ok) {
-        uprintf("magInit failed with\n");
+    retval = ICM_20948_low_power(&imu, false);
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("ICM_20948_low_power failed with %0x\n", retval);
         return HAL_ERROR;
     }
-    HAL_Delay(50);
-    
-    uint8_t data;
-    ICM_20948_set_bank(&imu, 0);
-    ICM_20948_execute_r(&imu, AGB0_REG_PWR_MGMT_1, &data, 1);  // reset AK09916
-    uprintf("swreset: %02x\n", data);
-    
+    retval = ICM_20948_set_clock_source(&imu, ICM_20948_Clock_Auto);
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("ICM_20948_set_clock_source failed with %0x\n", retval);
+        return HAL_ERROR;
+    }
+    retval = imuAccelGyroInit();
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("imuAccelGyroInit failed with %0x\n", retval);
+        return HAL_ERROR;
+    }
+    HAL_Delay(100);
+    retval = magInit();
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("magInit failed with %0x\n", retval);
+        return HAL_ERROR;
+    }
+    HAL_Delay(100);
+
+    retval = dmpInit();
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("dmpInit failed with %0x\n", retval);
+        vTaskDelay(1000);
+        return HAL_ERROR;
+    }
+
+    retval = dmpPostInit();
+    if (retval != ICM_20948_Stat_Ok) {
+        uprintf("dmpPostInit failed with %0x\n", retval);
+        vTaskDelay(1000);
+        return HAL_ERROR;
+    }
+
+    imuLoadScale();
     return HAL_OK;
 }
 
@@ -73,6 +104,12 @@ ICM_20948_Status_e imuAccelGyroInit() {
     if (retval != ICM_20948_Stat_Ok) return retval;
 
     return retval;
+}
+
+bool imuIsDataReady() {
+    ICM_20948_Status_e retval = ICM_20948_data_ready(&imu);
+    if (retval != ICM_20948_Stat_Ok) return false;
+    return true;
 }
 
 ICM_20948_Status_e imuRead(IMUData_T *imuData) {
@@ -133,24 +170,42 @@ void imuScaleAndAssign(IMUData_T *imuData, ICM_20948_AGMT_t *agmt) {
     imuData->mag.z = agmt->mag.axes.z * scale;
 }
 
-
-ICM_20948_Status_e imuLoadScale(){
+ICM_20948_Status_e imuLoadScale() {
     ICM_20948_Status_e retval = ICM_20948_Stat_Ok;
 
     retval |= ICM_20948_set_bank(&imu, 2);
     ICM_20948_ACCEL_CONFIG_t acfg;
     retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_ACCEL_CONFIG, (uint8_t *)&acfg, 1 * sizeof(acfg));
-    fss.a = acfg.ACCEL_FS_SEL; // Worth noting that without explicitly setting the FS range of the accelerometer it was showing the register value for +/- 2g but the reported values were actually scaled to the +/- 16g range
-                                      // Wait a minute... now it seems like this problem actually comes from the digital low-pass filter. When enabled the value is 1/8 what it should be...
+    fss.a = acfg.ACCEL_FS_SEL;  // Worth noting that without explicitly setting the FS range of the accelerometer it was showing the register value for +/- 2g but the reported values were actually scaled to the +/- 16g range
+                                // Wait a minute... now it seems like this problem actually comes from the digital low-pass filter. When enabled the value is 1/8 what it should be...
     retval |= ICM_20948_set_bank(&imu, 2);
     ICM_20948_GYRO_CONFIG_1_t gcfg1;
     retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_GYRO_CONFIG_1, (uint8_t *)&gcfg1, 1 * sizeof(gcfg1));
     fss.g = gcfg1.GYRO_FS_SEL;
     ICM_20948_ACCEL_CONFIG_2_t acfg2;
-    retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_ACCEL_CONFIG_2, (uint8_t *)&acfg2, 1 * sizeof(acfg2));    
+    retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_ACCEL_CONFIG_2, (uint8_t *)&acfg2, 1 * sizeof(acfg2));
 
     return retval;
 }
+
+ICM_20948_Status_e imuIntEnableRawDataReady(bool enable) {
+    ICM_20948_INT_enable_t en;                                          // storage
+    ICM_20948_Status_e status = ICM_20948_int_enable(&imu, NULL, &en);  // read phase
+    if (status != ICM_20948_Stat_Ok) {
+        return status;
+    }
+    en.RAW_DATA_0_RDY_EN = enable;                  // change the setting
+    status = ICM_20948_int_enable(&imu, &en, &en);  // write phase w/ readback
+    if (status != ICM_20948_Stat_Ok) {
+        return status;
+    }
+    if (en.RAW_DATA_0_RDY_EN != enable) {
+        status = ICM_20948_Stat_Err;
+        return status;
+    }
+    return status;
+}
+
 ICM_20948_Status_e spi_write(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user) {
     if (len == 1)
         if (ICM_WriteOneByte(regaddr, *pdata) != HAL_OK) return ICM_20948_Stat_Err;

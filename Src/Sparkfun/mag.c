@@ -48,10 +48,10 @@ ICM_20948_Status_e magInit() {
         return ICM_20948_Stat_WrongID;
     }
 
-    retval = magWrite(AK09916_REG_CNTL2, &((AK09916_CNTL2_Reg_t){.MODE = AK09916_mode_cont_100hz, .reserved_0 = 0}));
+    retval = magWrite(AK09916_REG_CNTL2, (uint8_t *)&((AK09916_CNTL2_Reg_t){.MODE = AK09916_mode_cont_100hz, .reserved_0 = 0}));
     if (retval != ICM_20948_Stat_Ok) return retval;
 
-    retval = ICM_20948_i2c_controller_configure_peripheral(&imu, 0, MAG_AK09916_I2C_ADDR, AK09916_REG_ST1, 9, true, true, false, false, false, 0);
+    retval = ICM_20948_i2c_controller_configure_peripheral(&imu, 0, MAG_AK09916_I2C_ADDR, AK09916_REG_ST1, 9, true, true, false, false, false, AK09916_mode_cont_100hz);
     return retval;
 }
 
