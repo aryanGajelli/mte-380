@@ -75,7 +75,7 @@ void mainTask(void *pvParameters) {
                 double dYaw = yaw - prevYaw;
                 prevYaw = yaw;
 
-                if (!isnan(yaw) && fabs(dYaw) < MAX_ANGULAR_VELOCITY_DEG_PER_S*dT)
+                // if (!isnan(yaw) && fabs(dYaw) < MAX_ANGULAR_VELOCITY_DEG_PER_S*dT)
                     uprintf("%.3f, %.3f\n", yaw, dYaw);
             }
         }

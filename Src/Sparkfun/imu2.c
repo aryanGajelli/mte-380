@@ -94,10 +94,10 @@ ICM_20948_Status_e imuAccelGyroInit() {
     retval = ICM_20948_set_sample_mode(&imu, sensors, ICM_20948_Sample_Mode_Continuous);
     if (retval != ICM_20948_Stat_Ok) return retval;
 
-    retval = ICM_20948_set_full_scale(&imu, sensors, (ICM_20948_fss_t){.a = gpm2, .g = dps250});
-    if (retval != ICM_20948_Stat_Ok) return retval;
+    // retval = ICM_20948_set_full_scale(&imu, sensors, (ICM_20948_fss_t){.a = gpm2, .g = dps250});
+    // if (retval != ICM_20948_Stat_Ok) return retval;
 
-    retval = ICM_20948_set_dlpf_cfg(&imu, sensors, (ICM_20948_dlpcfg_t){.a = acc_d473bw_n499bw, .g = gyr_d361bw4_n376bw5});
+    retval = ICM_20948_set_dlpf_cfg(&imu, sensors, (ICM_20948_dlpcfg_t){.a = acc_d11bw5_n17bw, .g = gyr_d196bw6_n229bw8});
     if (retval != ICM_20948_Stat_Ok) return retval;
 
     retval = ICM_20948_enable_dlpf(&imu, sensors, false);
