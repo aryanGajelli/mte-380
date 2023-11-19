@@ -35,19 +35,23 @@ void mainTask(void *pvParameters) {
 
     TickType_t xLastWakeTime = xTaskGetTickCount();
     IMUData_T imuData;
-    ICM_ReadAccelGyro(&imuData);
+    // ICM_ReadAccelGyro(&imuData);
     double k = 0.1;
     while (1) {
-        ICM_ReadAccelGyro(&imuData);
+        // ICM_ReadAccelGyro(&imuData);
         // print rotation
-        uprintf("x: %.3f, y: %.3f, z: %.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        // uprintf("x: %.3f, y: %.3f, z: %.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        vTaskDelayUntil(&xLastWakeTime, 10);
     }
 }
 
 HAL_StatusTypeDef mainTaskInit() {
-    if (ICMInit() != HAL_OK) {
+    if (imuInit() != HAL_OK) {
         Error_Handler();
     }
+    // if (ICMInit() != HAL_OK) {
+    //     Error_Handler();
+    // }
 
     if (colorSensorInit() != HAL_OK) {
         Error_Handler();
@@ -61,13 +65,13 @@ HAL_StatusTypeDef mainTaskInit() {
         Error_Handler();
     }
 
-    if (fusionInit() != HAL_OK) {
-        Error_Handler();
-    }
+    // if (fusionInit() != HAL_OK) {
+    //     Error_Handler();
+    // }
 
-    if (odometryInit() != HAL_OK) {
-        Error_Handler();
-    }
+    // if (odometryInit() != HAL_OK) {
+    //     Error_Handler();
+    // }
     if (encodersInit() != HAL_OK) {
         Error_Handler();
     }
