@@ -13,6 +13,7 @@
 #include "encoders.h"
 #include "fusion.h"
 #include "imu.h"
+#include "imu2.h"
 #include "main.h"
 #include "mathUtils.h"
 #include "motion_fx.h"
@@ -37,10 +38,13 @@ void mainTask(void *pvParameters) {
     IMUData_T imuData;
     // ICM_ReadAccelGyro(&imuData);
     double k = 0.1;
+    ICM_20948_Device_t *imu = imuGet();
+    ICM_20948_AGMT_t agmt;
     while (1) {
+        ICM_20948_get_agmt(imu, &agmt);
         // ICM_ReadAccelGyro(&imuData);
         // print rotation
-        // uprintf("x: %.3f, y: %.3f, z: %.3f\n", imuData.gyro.x, imuData.gyro.y, imuData.gyro.z);
+        uprintf("x: %d, y: %d, z: %d\n", agmt.acc.axes.x, agmt.acc.axes.y, agmt.acc.axes.z);
         vTaskDelayUntil(&xLastWakeTime, 10);
     }
 }

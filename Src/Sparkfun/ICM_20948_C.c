@@ -127,7 +127,23 @@ ICM_20948_Status_e ICM_20948_init_struct(ICM_20948_Device_t *pdev)
   // Initialize all elements by 0 except for _last_bank
   // Initialize _last_bank to 4 (invalid bank number)
   // so ICM_20948_set_bank function does not skip issuing bank change operation
-  static const ICM_20948_Device_t init_device = { ._last_bank = 4 };
+  static const ICM_20948_Device_t init_device = { ._last_bank = 4,
+#if defined(ICM_20948_USE_DMP)
+    ._dmp_firmware_available = true,  // Initialize _dmp_firmware_available
+#else
+    ._dmp_firmware_available = false,  // Initialize _dmp_firmware_available
+#endif
+
+    ._firmware_loaded = false,  // Initialize _firmware_loaded
+    ._last_bank = 255,          // Initialize _last_bank. Make it invalid. It will be set by the first call of ICM_20948_set_bank.
+    ._last_mems_bank = 255,     // Initialize _last_mems_bank. Make it invalid. It will be set by the first call of inv_icm20948_write_mems.
+    ._gyroSF = 0,               // Use this to record the GyroSF, calculated by inv_icm20948_set_gyro_sf
+    ._gyroSFpll = 0,
+    ._enabled_Android_0 = 0,       // Keep track of which Android sensors are enabled: 0-31
+    ._enabled_Android_1 = 0,      // Keep track of which Android sensors are enabled: 32-
+    ._enabled_Android_intr_0 = 0,  // Keep track of which Android sensor interrupts are enabled: 0-31
+    ._enabled_Android_intr_1 = 0  // Keep track of which Android sensor interrupts are enabled: 32-
+  };
   *pdev = init_device;
   return ICM_20948_Stat_Ok;
 }
