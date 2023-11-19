@@ -40,10 +40,12 @@ void mainTask(void *pvParameters) {
     double k = 0.1;
     ICM_20948_AGMT_t agmt;
     while (1) {
-        ICM_20948_get_agmt(&imu, &agmt);
+        // ICM_20948_get_agmt(&imu, &agmt);
+        imuRead(&imuData);
+        uprintf("x: %.3f, y: %.3f, z: %.3f\n", imuData.mag.x, imuData.mag.y, imuData.mag.z);
         // ICM_ReadAccelGyro(&imuData);
         // print rotation
-        uprintf("x: %d, y: %d, z: %d\n", agmt.mag.axes.x, agmt.mag.axes.y, agmt.mag.axes.z);
+        // uprintf("x: %d, y: %d, z: %d\n", agmt.mag.axes.x, agmt.mag.axes.y, agmt.mag.axes.z);
         vTaskDelayUntil(&xLastWakeTime, 10);
     }
 }

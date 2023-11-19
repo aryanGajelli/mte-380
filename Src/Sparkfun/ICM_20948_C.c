@@ -1099,23 +1099,6 @@ ICM_20948_Status_e ICM_20948_get_agmt(ICM_20948_Device_t *pdev, ICM_20948_AGMT_t
   pagmt->mag.axes.z = ((buff[20] << 8) | (buff[19] & 0xFF));
   pagmt->magStat2 = buff[22];
 
-  static bool called = false;
-  if (!called) {
-    // Get settings to be able to compute scaled values
-    retval |= ICM_20948_set_bank(pdev, 2);
-    ICM_20948_ACCEL_CONFIG_t acfg;
-    retval |= ICM_20948_execute_r(pdev, (uint8_t)AGB2_REG_ACCEL_CONFIG, (uint8_t *)&acfg, 1 * sizeof(acfg));
-    pagmt->fss.a = acfg.ACCEL_FS_SEL; // Worth noting that without explicitly setting the FS range of the accelerometer it was showing the register value for +/- 2g but the reported values were actually scaled to the +/- 16g range
-                                      // Wait a minute... now it seems like this problem actually comes from the digital low-pass filter. When enabled the value is 1/8 what it should be...
-    retval |= ICM_20948_set_bank(pdev, 2);
-    ICM_20948_GYRO_CONFIG_1_t gcfg1;
-    retval |= ICM_20948_execute_r(pdev, (uint8_t)AGB2_REG_GYRO_CONFIG_1, (uint8_t *)&gcfg1, 1 * sizeof(gcfg1));
-    pagmt->fss.g = gcfg1.GYRO_FS_SEL;
-    ICM_20948_ACCEL_CONFIG_2_t acfg2;
-    retval |= ICM_20948_execute_r(pdev, (uint8_t)AGB2_REG_ACCEL_CONFIG_2, (uint8_t *)&acfg2, 1 * sizeof(acfg2));
-    called = true;
-    return retval;
-  }
   return retval;
 }
 

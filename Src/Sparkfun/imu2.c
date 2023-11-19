@@ -10,6 +10,7 @@
 #include "Sparkfun/ICM_20948_C.h"
 #include "Sparkfun/ICM_20948_REGISTERS.h"
 #include "debug.h"
+#include "imu.h"
 #include "stm32f4xx_hal.h"
 
 ICM_20948_Device_t imu;
@@ -19,6 +20,7 @@ ICM_20948_Status_e spi_write(uint8_t regaddr, uint8_t *pdata, uint32_t len, void
 ICM_20948_Status_e spi_read(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user);
 ICM_20948_Status_e imuAccelGyroInit();
 
+ICM_20948_fss_t fss;
 HAL_StatusTypeDef imuInit() {
     ICM_20948_init_struct(&imu);
     _serif = (ICM_20948_Serif_t){.read = spi_read, .write = spi_write, .user = NULL};
@@ -35,8 +37,17 @@ HAL_StatusTypeDef imuInit() {
     ICM_20948_sleep(&imu, false);
     ICM_20948_low_power(&imu, false);
     ICM_20948_set_clock_source(&imu, ICM_20948_Clock_Auto);
-    imuAccelGyroInit();
-    uprintf("mag init: %d\n", magInit());
+    if (imuAccelGyroInit() != ICM_20948_Stat_Ok) {
+        uprintf("imuAccelGyroInit failed\n");
+        return HAL_ERROR;
+    }
+    
+    if (magInit() != ICM_20948_Stat_Ok) {
+        uprintf("magInit failed with\n");
+        return HAL_ERROR;
+    }
+    HAL_Delay(50);
+    
     uint8_t data;
     ICM_20948_set_bank(&imu, 0);
     ICM_20948_execute_r(&imu, AGB0_REG_PWR_MGMT_1, &data, 1);  // reset AK09916
@@ -64,6 +75,82 @@ ICM_20948_Status_e imuAccelGyroInit() {
     return retval;
 }
 
+ICM_20948_Status_e imuRead(IMUData_T *imuData) {
+    ICM_20948_AGMT_t agmt;
+    ICM_20948_Status_e retval = ICM_20948_get_agmt(&imu, &agmt);
+    if (retval != ICM_20948_Stat_Ok) return retval;
+    imuScaleAndAssign(imuData, &agmt);
+    return ICM_20948_Stat_Ok;
+}
+
+void imuScaleAndAssign(IMUData_T *imuData, ICM_20948_AGMT_t *agmt) {
+    static double scale;
+    switch (fss.a) {
+        case gpm2:
+            scale = 16384.;
+            break;
+        case gpm4:
+            scale = 8192.;
+            break;
+        case gpm8:
+            scale = 4096.;
+            break;
+        case gpm16:
+            scale = 2048.;
+            break;
+        default:
+            break;
+    }
+
+    imuData->accel.x = agmt->acc.axes.x / scale;
+    imuData->accel.y = agmt->acc.axes.y / scale;
+    imuData->accel.z = agmt->acc.axes.z / scale;
+
+    switch (fss.g) {
+        case dps250:
+            scale = 131.;
+            break;
+        case dps500:
+            scale = 65.5;
+            break;
+        case dps1000:
+            scale = 32.8;
+            break;
+        case dps2000:
+            scale = 16.4;
+            break;
+        default:
+            break;
+    }
+
+    imuData->gyro.x = agmt->gyr.axes.x / scale;
+    imuData->gyro.y = agmt->gyr.axes.y / scale;
+    imuData->gyro.z = agmt->gyr.axes.z / scale;
+
+    scale = 0.15;
+    imuData->mag.x = agmt->mag.axes.x * scale;
+    imuData->mag.y = agmt->mag.axes.y * scale;
+    imuData->mag.z = agmt->mag.axes.z * scale;
+}
+
+
+ICM_20948_Status_e imuLoadScale(){
+    ICM_20948_Status_e retval = ICM_20948_Stat_Ok;
+
+    retval |= ICM_20948_set_bank(&imu, 2);
+    ICM_20948_ACCEL_CONFIG_t acfg;
+    retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_ACCEL_CONFIG, (uint8_t *)&acfg, 1 * sizeof(acfg));
+    fss.a = acfg.ACCEL_FS_SEL; // Worth noting that without explicitly setting the FS range of the accelerometer it was showing the register value for +/- 2g but the reported values were actually scaled to the +/- 16g range
+                                      // Wait a minute... now it seems like this problem actually comes from the digital low-pass filter. When enabled the value is 1/8 what it should be...
+    retval |= ICM_20948_set_bank(&imu, 2);
+    ICM_20948_GYRO_CONFIG_1_t gcfg1;
+    retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_GYRO_CONFIG_1, (uint8_t *)&gcfg1, 1 * sizeof(gcfg1));
+    fss.g = gcfg1.GYRO_FS_SEL;
+    ICM_20948_ACCEL_CONFIG_2_t acfg2;
+    retval |= ICM_20948_execute_r(&imu, (uint8_t)AGB2_REG_ACCEL_CONFIG_2, (uint8_t *)&acfg2, 1 * sizeof(acfg2));    
+
+    return retval;
+}
 ICM_20948_Status_e spi_write(uint8_t regaddr, uint8_t *pdata, uint32_t len, void *user) {
     if (len == 1)
         if (ICM_WriteOneByte(regaddr, *pdata) != HAL_OK) return ICM_20948_Stat_Err;
