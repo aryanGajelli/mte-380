@@ -42,7 +42,13 @@ void mainTask(void *pvParameters) {
     ICM_20948_AGMT_t agmt;
     icm_20948_DMP_data_t dmpData;
     double yaw, prevYaw = 0.0;
+    double dT;
+    uint32_t tick, prevTick = HAL_GetTick();
+
     while (1) {
+        tick = HAL_GetTick();
+        dT = (tick - prevTick) / 1000.0;
+        prevTick = tick;
         ICM_20948_Status_e status = dmpReadDataFromFIFO(&dmpData);
         // Was valid data available?
         if (status == ICM_20948_Stat_Ok || status == ICM_20948_Stat_FIFOMoreDataAvail) {
@@ -68,7 +74,8 @@ void mainTask(void *pvParameters) {
                 yaw = RAD_TO_DEG(atan2(t3, t4));
                 double dYaw = yaw - prevYaw;
                 prevYaw = yaw;
-                if (!isnan(yaw))
+
+                if (!isnan(yaw) && fabs(dYaw) < MAX_ANGULAR_VELOCITY_DEG_PER_S*dT)
                     uprintf("%.3f, %.3f\n", yaw, dYaw);
             }
         }
