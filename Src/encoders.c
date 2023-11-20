@@ -11,6 +11,9 @@
 volatile Encoder_T encoderLeft;
 volatile Encoder_T encoderRight;
 
+Encoder_T *encLeft = &encoderLeft;
+Encoder_T *encRight = &encoderRight;
+
 void encoderUpdate(Encoder_T *encoder) {
     encoder->prevTicks = encoder->ticks;
     uint32_t timeStamp = HAL_GetTick();

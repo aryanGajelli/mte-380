@@ -14,10 +14,7 @@
 #include "task.h"
 
 char isControlInit = 0;
-Encoder_T *encLeft, *encRight;
 HAL_StatusTypeDef controlInit() {
-    encLeft = encoder_getInstance(ENCODER_LEFT);
-    encRight = encoder_getInstance(ENCODER_RIGHT);
     isControlInit = 1;
     return HAL_OK;
 }
@@ -31,11 +28,17 @@ void controlTask(void *pvParameters) {
     }
     uprintf("controlTask\n");
 
+    // controlTurnToHeading(-45);
+    // HAL_Delay(200);
+    // controlTurnToHeading(0);
+    // controlGoToPoint((Pose_T){.x = 0, .y = 100, .theta = 0});
+    // controlGoToPoint((Pose_T){.x = 0, .y = 50, .theta = 0});
+    // controlGoToPoint((Pose_T){.x = 0, .y = 50, .theta = 0});
+    controlTestSquareAbsolute();
     double line;
+    Pose_T *pose = odometryGetPose();
     while (1) {
-        // Pose_T pose = odometryGetPose();
-
-        // uprintf("%.3f %.3f %.3f\n", pose.x, pose.y, pose.theta);
+        uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
@@ -132,7 +135,7 @@ void controlLineFollowing() {
         motorSetSpeed(MOTOR_LEFT, constSpeed + speed);
         motorSetSpeed(MOTOR_RIGHT, constSpeed - speed);
         uprintf("l: %.3f %.3f %.3f\n", error, speed, lineDeviation);
-        // if (dist(pose.x, pose.y, 0, 0) > 300)
+        // if (dist(pose->x, pose->y, 0, 0) > 300)
         //     break;
     }
     motorHardStop(MOTOR_LEFT);
@@ -141,13 +144,11 @@ void controlLineFollowing() {
 
 void controlTurnToHeading(double targetDeg) {
     // targetDeg = -targetDeg;
-    static const double ACCEPTABLE_ERROR_DEG = 1;
-    double kp = 0.7, kd = 0.5, ki = 0.01;
-    double error = targetDeg - odometryGetPose().theta;
-    if (error > 180)
-        error -= 360;
-    else if (error < -180)
-        error += 360;
+    static const double ACCEPTABLE_ERROR_DEG = 0.7;
+    Pose_T *pose = odometryGetPose();
+    Pose_T startPose = *pose;
+    double kp = 0.7, kd = 0.5, ki = 0.05;
+    double error = adjustTurn(targetDeg - startPose.theta);
 
     if (fabs(error) < 1) return;
 
@@ -155,13 +156,7 @@ void controlTurnToHeading(double targetDeg) {
     int dir = error > 180 ? -1 : 1;
     double integral = 0;
     while (fabs(error) > ACCEPTABLE_ERROR_DEG) {
-        Pose_T pose = odometryGetPose();
-        error = targetDeg - pose.theta;
-        if (error > 180) {
-            error -= 360;
-        } else if (error < -180) {
-            error += 360;
-        }
+        error = adjustTurn(targetDeg - pose->theta);
         if (fabs(error) < 10) {
             integral += error;
         } else {
@@ -175,7 +170,8 @@ void controlTurnToHeading(double targetDeg) {
 
         motorSetSpeed(MOTOR_LEFT, dir * -turnSpeed);
         motorSetSpeed(MOTOR_RIGHT, dir * turnSpeed);
-        uprintf("t: %.3f %.3f %.3f\n", error, turnSpeed, pose.theta);
+        uprintf("t: %.3f %.3f %.3f\n", error, turnSpeed, pose->theta);
+        vTaskDelay(1);
     }
 
     motorHardStop(MOTOR_LEFT);
@@ -184,13 +180,15 @@ void controlTurnToHeading(double targetDeg) {
 
 void controlMoveForward(double targetDist, double speedMultiplier) {
     static const double ACCEPTABLE_ERROR = 1;
+    Pose_T *pose = odometryGetPose();
+    Pose_T startPose = *pose;
     double kp = 0.75, kd = 0.5, ki = 0.00;
     double kpT = 1.5, kdT = 0.5, kiT = 0.00;
-    double targetTheta = odometryGetPose().theta;
+    double targetTheta = startPose.theta;
     double dist = (encLeft->dist + encRight->dist) / 2;
     targetDist += dist;
     double error = targetDist - dist;
-    double errorAng = targetTheta - odometryGetPose().theta;
+    double errorAng = targetTheta - startPose.theta;
     if (errorAng > 180) {
         errorAng -= 360;
     } else if (errorAng < -180) {
@@ -201,11 +199,10 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
     double prevError = error;
     double integral = 0;
     while (fabs(error) > ACCEPTABLE_ERROR) {
-        Pose_T pose = odometryGetPose();
         dist = (encLeft->dist + encRight->dist) / 2;
         error = targetDist - dist;
 
-        errorAng = targetTheta - pose.theta;
+        errorAng = targetTheta - pose->theta;
         if (errorAng > 180) {
             errorAng -= 360;
         } else if (errorAng < -180) {
@@ -234,7 +231,7 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
         motorSetSpeed(MOTOR_LEFT, speedMultiplier * speedL);
         motorSetSpeed(MOTOR_RIGHT, speedMultiplier * speedR);
 
-        uprintf("t: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose.x, pose.y, pose.theta);
+        uprintf("t: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose->x, pose->y, pose->theta);
     }
 
     motorHardStop(MOTOR_LEFT);
@@ -243,7 +240,8 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
 
 void controlGoToPoint(Pose_T targetPose) {
     static const double ACCEPTABLE_ERROR = 5;
-    Pose_T startPose = odometryGetPose();
+    Pose_T *pose = odometryGetPose();
+    Pose_T startPose = *pose;
 
     double targetTheta = odometryGet2DAngle(targetPose, startPose);
     controlTurnToHeading(targetTheta);
@@ -252,30 +250,53 @@ void controlGoToPoint(Pose_T targetPose) {
     targetPose.y -= startPose.y;
     double error = odometryDotError(targetPose, startPose);
     double prevError = error;
-    double kp = 0.5, kd = 0.5, ki = 0.00;
+
+    double errorT = adjustTurn(targetTheta - pose->theta);
+    double prevErrorT = errorT;
+
+    double kp = 0.7, kd = 0.5, ki = 0.00;
+    double kpT = 2, kdT = 0.5, kiT = 0.00;
+
+    double integral = 0;
+    double integralT = 0;
     while (fabs(error) > ACCEPTABLE_ERROR) {
-        Pose_T pose = odometryGetPose();
-        pose.x -= startPose.x;
-        pose.y -= startPose.y;
-        error = odometryDotError(targetPose, pose);
-        double speed = kp * error + kd * (error - prevError) + ki * error;
+        Pose_T adjustedPose = *pose;
+        adjustedPose.x -= startPose.x;
+        adjustedPose.y -= startPose.y;
+        error = odometryDotError(targetPose, adjustedPose);
+        errorT = adjustTurn(targetTheta - pose->theta);
+
+        if (fabs(error) < 10)
+            integral += error;
+        else
+            integral = 0;
+
+        if (fabs(errorT) < 10)
+            integralT += errorT;
+        else
+            integralT = 0;
+    
+        double speed = kp * error + kd * (error - prevError) + ki * integral;
+        double speedT = kpT * errorT + kdT * (errorT - prevErrorT) + kiT * integralT;
+        
         prevError = error;
-        speed = clamp(speed, -100, 100);
-        motorSetSpeed(MOTOR_LEFT, speed);
-        motorSetSpeed(MOTOR_RIGHT, speed);
+        prevErrorT = errorT;
 
-        uprintf("%.3f %.3f %.3f %.3f\n", error, pose.x, pose.y, pose.theta);
+        motorSetSpeed(MOTOR_LEFT, clamp(speed - speedT, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(speed + speedT, -100, 100));
 
+        uprintf("%.3f %.3f %.3f %.3f\n", error, pose->x, pose->y, pose->theta);
         vTaskDelay(1);
     }
+
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
 }
 
 void controlGoToPoseRASETE(Pose_T targetPose) {
     static const double ACCEPTABLE_ERROR = 1;
-    Pose_T pose = odometryGetPose();
-    double thetaError = targetPose.theta - pose.theta;
+    Pose_T *pose = odometryGetPose();
+    double thetaError = targetPose.theta - pose->theta;
     if (thetaError > 180) {
         thetaError -= 360;
     } else if (thetaError < -180) {
@@ -284,14 +305,14 @@ void controlGoToPoseRASETE(Pose_T targetPose) {
     arm_matrix_instance_f32 dP = {
         .numRows = 3,
         .numCols = 1,
-        .pData = (float32_t[3]){targetPose.x - pose.x,
-                                targetPose.y - pose.y,
+        .pData = (float32_t[3]){targetPose.x - pose->x,
+                                targetPose.y - pose->y,
                                 thetaError}};
     arm_matrix_instance_f32 transform = {
         .numRows = 3,
         .numCols = 3,
-        .pData = (float32_t[9]){cos(DEG_TO_RAD(pose.theta)), sin(DEG_TO_RAD(pose.theta)), 0,
-                                -sin(DEG_TO_RAD(pose.theta)), cos(DEG_TO_RAD(pose.theta)), 0,
+        .pData = (float32_t[9]){cos(DEG_TO_RAD(pose->theta)), sin(DEG_TO_RAD(pose->theta)), 0,
+                                -sin(DEG_TO_RAD(pose->theta)), cos(DEG_TO_RAD(pose->theta)), 0,
                                 0, 0, 1}};
     arm_matrix_instance_f32 e = {
         .numRows = 3,
@@ -307,14 +328,14 @@ void controlGoToPoseRASETE(Pose_T targetPose) {
     // double kLin = 0.5, kAng = 0.5;//, vD = 0.5, wD = 0.5;
     while (1) {
         pose = odometryGetPose();
-        thetaError = targetPose.theta - pose.theta;
+        thetaError = targetPose.theta - pose->theta;
         if (thetaError > 180) {
             thetaError -= 360;
         } else if (thetaError < -180) {
             thetaError += 360;
         }
-        dP.pData[0] = targetPose.x - pose.x;
-        dP.pData[1] = targetPose.y - pose.y;
+        dP.pData[0] = targetPose.x - pose->x;
+        dP.pData[1] = targetPose.y - pose->y;
         dP.pData[2] = thetaError;
         arm_mat_mult_f32(&transform, &dP, &e);
 
@@ -332,7 +353,7 @@ void controlGoToPoseRASETE(Pose_T targetPose) {
         // linSpeed *= 0.4;
         // motorSetSpeed(MOTOR_LEFT, -speedL);
         // motorSetSpeed(MOTOR_RIGHT, -speedR);
-        // uprintf("g: %.3f %.2f %.2f %.1f\n", error, pose.x, pose.y, pose.theta);
+        // uprintf("g: %.3f %.2f %.2f %.1f\n", error, pose->x, pose->y, pose->theta);
         uprintf("g: %.3f %.2f %.2f %.2f %.2f\n", e.pData[0], e.pData[1], e.pData[2], speedL, speedL);
         vTaskDelay(1);
     }

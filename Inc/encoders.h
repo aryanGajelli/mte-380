@@ -19,6 +19,9 @@ typedef struct Encoder_T {
     uint32_t timeStamp;
 } Encoder_T;
 
+extern Encoder_T *encLeft;
+extern Encoder_T *encRight;
+
 void encoderUpdate(Encoder_T *encoder);
 void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim);
 

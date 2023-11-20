@@ -18,6 +18,7 @@ double sign(double x);
 double map(double x, double a, double b, double c, double d);
 double dist(double x1, double y1, double x2, double y2);
 double clamp(double x, double a, double b);
+double adjustTurn(double angle);
 void printMatrix(arm_matrix_instance_f32 mat);
 void printVector(float32_t *vec, size_t len);
 
