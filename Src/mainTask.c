@@ -12,12 +12,10 @@
 #include "demo.h"
 #include "dmp.h"
 #include "encoders.h"
-#include "fusion.h"
 #include "imu.h"
 #include "imu2.h"
 #include "main.h"
 #include "mathUtils.h"
-#include "motion_fx.h"
 #include "motors.h"
 #include "odometry.h"
 #include "sensors.h"
@@ -34,15 +32,15 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
-    // uint32_t start = HAL_GetTick();
-    // while (!isSDemoStarted) {
-    //     if (HAL_GetTick() - start > 5000) {
-    //         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-    //     } else {
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     }
-    //     vTaskDelay(100);
-    // }
+    uint32_t start = HAL_GetTick();
+    while (!isSDemoStarted) {
+        if (HAL_GetTick() - start > 5000) {
+            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        } else {
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        }
+        vTaskDelay(150);
+    }
 
     if (controlInit() != HAL_OK) {
         Error_Handler();

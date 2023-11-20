@@ -4,10 +4,8 @@
 #include "cmsis_os.h"
 #include "debug.h"
 #include "encoders.h"
-#include "fusion.h"
 #include "imu.h"
 #include "imu2.h"
-#include "motion_fx.h"
 #include "stm32f4xx_hal.h"
 #include "task.h"
 

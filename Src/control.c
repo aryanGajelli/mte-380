@@ -22,18 +22,18 @@ HAL_StatusTypeDef controlInit() {
 void controlTestSquare();
 void controlTestPickup();
 void controlTestSquareAbsolute();
+
 void controlTask(void *pvParameters) {
     while (!isControlInit) {
         vTaskDelay(10);
     }
     uprintf("controlTask\n");
 
-    // controlTestSquareAbsolute();
     double line;
-    // Pose_T *pose = odometryGetPose();
+    Pose_T *pose = odometryGetPose();
     while (1) {
-        uprintf("%d %d %d\n",colorGetFreq(COLOR_SENSOR_1), colorGetFreq(COLOR_SENSOR_2), colorGetFreq(COLOR_SENSOR_3));
-        // uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
+        // uprintf("%.3f %.3f %.3f %d %.3f\n", colorGetNormalizedOut(COLOR_SENSOR_1), colorGetNormalizedOut(COLOR_SENSOR_2), colorGetNormalizedOut(COLOR_SENSOR_3), colorGetLineDeviation(&line), line);
+        uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
@@ -139,35 +139,34 @@ void controlLineFollowing() {
 
 void controlTurnToHeading(double targetDeg) {
     // targetDeg = -targetDeg;
-    static const double ACCEPTABLE_ERROR_DEG = 0.7;
+    static const double ACCEPTABLE_ERROR_DEG = 1.5;
     Pose_T *pose = odometryGetPose();
     Pose_T startPose = *pose;
-    double kp = 0.7, kd = 0.5, ki = 0.05;
+    double kp = 0.7, kd = 0.5, ki = 0.09;
     double error = adjustTurn(targetDeg - startPose.theta);
 
     if (fabs(error) < 1) return;
-
     double prevError = error;
     int dir = error > 180 ? -1 : 1;
     double integral = 0;
-    while (fabs(error) > ACCEPTABLE_ERROR_DEG) {
+    double angVel, angAcc, prevAngVel = 0;
+    do {
+        prevError = error;
         error = adjustTurn(targetDeg - pose->theta);
-        if (fabs(error) < 10) {
+        if (fabs(error) < 5) {
             integral += error;
         } else {
             integral = 0;
         }
-        double turnSpeed = kp * error + kd * (error - prevError) + ki * integral;
-
-        prevError = error;
-        if (turnSpeed > 100) turnSpeed = 100;
-        if (turnSpeed < -100) turnSpeed = -100;
-
-        motorSetSpeed(MOTOR_LEFT, dir * -turnSpeed);
-        motorSetSpeed(MOTOR_RIGHT, dir * turnSpeed);
-        uprintf("t: %.3f %.3f %.3f\n", error, turnSpeed, pose->theta);
-        vTaskDelay(1);
-    }
+        angVel = kp * error + kd * (error - prevError) + ki * integral;
+        angVel = clamp(angVel, -100, 100);
+        angAcc = angVel - prevAngVel;
+        prevAngVel = angVel;
+        motorSetSpeed(MOTOR_LEFT, dir * -angVel);
+        motorSetSpeed(MOTOR_RIGHT, dir * angVel);
+        uprintf("t:%.3f %.3f %.3f %.3f %d\n", error, angVel, angAcc, pose->theta, HAL_GetTick());
+        // vTaskDelay(1);
+    } while (fabs(error) > ACCEPTABLE_ERROR_DEG || fabs(angAcc) > 0.4);
 
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
@@ -270,10 +269,10 @@ void controlGoToPoint(Pose_T targetPose) {
             integralT += errorT;
         else
             integralT = 0;
-    
+
         double speed = kp * error + kd * (error - prevError) + ki * integral;
         double speedT = kpT * errorT + kdT * (errorT - prevErrorT) + kiT * integralT;
-        
+
         prevError = error;
         prevErrorT = errorT;
 

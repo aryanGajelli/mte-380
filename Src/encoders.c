@@ -52,8 +52,8 @@ void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim) {
 
 HAL_StatusTypeDef encodersInit(void) {
     // reset encoder structs
-    encoderLeft = (Encoder_T){0, 0, 0, 0, ENCODER_LEFT, HAL_GetTick()};
-    encoderRight = (Encoder_T){0, 0, 0, 0, ENCODER_RIGHT, HAL_GetTick()};
+    encoderLeft = (Encoder_T){0, 0, 0, 0, 0., ENCODER_LEFT, HAL_GetTick()};
+    encoderRight = (Encoder_T){0, 0, 0, 0, 0., ENCODER_RIGHT, HAL_GetTick()};
     // enable the encoder interrupts to handle overflow
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_LEFT_HANDLE, TIM_IT_UPDATE);
     __HAL_TIM_ENABLE_IT(&ENCODER_TIMER_RIGHT_HANDLE, TIM_IT_UPDATE);
