@@ -34,31 +34,23 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
-    uint32_t start = HAL_GetTick();
-    while (!isSDemoStarted) {
-        if (HAL_GetTick() - start > 5000) {
-            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-        } else {
-            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        }
-        vTaskDelay(100);
-    }
+    // uint32_t start = HAL_GetTick();
+    // while (!isSDemoStarted) {
+    //     if (HAL_GetTick() - start > 5000) {
+    //         HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+    //     } else {
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     }
+    //     vTaskDelay(100);
+    // }
 
     if (controlInit() != HAL_OK) {
         Error_Handler();
     }
 
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    IMUData_T imuData;
-    // ICM_ReadAccelGyro(&imuData);
-    double k = 0.1;
-    ICM_20948_AGMT_t agmt;
-    icm_20948_DMP_data_t dmpData;
-    double yaw, prevYaw = 0.0;
-    double dT;
-    uint32_t tick, prevTick = HAL_GetTick();
-
     while (1) {
+        // print line deviation
+        
         vTaskDelay(100);
     }
 }

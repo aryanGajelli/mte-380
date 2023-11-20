@@ -19,7 +19,7 @@ uint32_t F_CLK;
 volatile uint8_t isFirstCaptured = 0;
 volatile uint32_t colorSensorPeriod = 0;
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef* htim) {
-    if (htim->Instance == COLOR_TIMER_INSTANCE) {
+    if (0) {
         static volatile uint32_t colorSensor_T1 = 0;
         static volatile uint32_t colorSensor_T2 = 0;
         uint32_t arr = __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
@@ -50,11 +50,8 @@ HAL_StatusTypeDef colorSensorInit() {
     COLOR_3_DIS();
 
     F_CLK = HAL_RCC_GetSysClockFreq();
-
-    if (HAL_TIM_IC_Start_IT(&COLOR_TIMER_HANDLE, TIM_CHANNEL_1) != HAL_OK) {
-        return HAL_ERROR;
-    }
-    if (HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE) != HAL_OK) {
+    __HAL_TIM_ENABLE_IT(&COLOR_TIMER_HANDLE, TIM_IT_UPDATE);
+    if (HAL_TIM_Encoder_Start(&COLOR_TIMER_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
         return HAL_ERROR;
     }
 
@@ -68,14 +65,14 @@ HAL_StatusTypeDef colorSensorInit() {
  */
 uint32_t colorGetFreq(ColorSensor_E sensor) {
     colorSelectSensor(sensor);
-    // Need to take 2 samples as first one is always junky when switching between sensors
-    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-        ;
-    HAL_TIM_Base_Start_IT(&COLOR_TIMER_HANDLE);
-    while (HAL_TIM_Base_GetState(&COLOR_TIMER_HANDLE) != HAL_TIM_STATE_READY)
-        ;
-    return F_CLK / colorSensorPeriod;
+    static const  uint32_t DELAY_TIME_MS = 5;
+    int32_t start = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
+    vTaskDelay(DELAY_TIME_MS);
+    int32_t end = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
+    if (start < end) {
+        start += __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
+    }
+    return (uint32_t)(1000. / (DELAY_TIME_MS * 2.) * (start - end));
 }
 
 void colorSetFreqScaling(FreqScale_E freqScale) {

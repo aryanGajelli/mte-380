@@ -28,17 +28,12 @@ void controlTask(void *pvParameters) {
     }
     uprintf("controlTask\n");
 
-    // controlTurnToHeading(-45);
-    // HAL_Delay(200);
-    // controlTurnToHeading(0);
-    // controlGoToPoint((Pose_T){.x = 0, .y = 100, .theta = 0});
-    // controlGoToPoint((Pose_T){.x = 0, .y = 50, .theta = 0});
-    // controlGoToPoint((Pose_T){.x = 0, .y = 50, .theta = 0});
-    controlTestSquareAbsolute();
+    // controlTestSquareAbsolute();
     double line;
-    Pose_T *pose = odometryGetPose();
+    // Pose_T *pose = odometryGetPose();
     while (1) {
-        uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
+        uprintf("%d %d %d\n",colorGetFreq(COLOR_SENSOR_1), colorGetFreq(COLOR_SENSOR_2), colorGetFreq(COLOR_SENSOR_3));
+        // uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
