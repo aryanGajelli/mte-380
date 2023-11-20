@@ -2,15 +2,24 @@
 #include <stdio.h>
 
 #include "FreeRTOS.h"
+#include "ICM20948_register.h"
+#include "ICM20948_spi.h"
+#include "arm_math.h"
 #include "bsp.h"
 #include "color_sensor.h"
+#include "control.h"
 #include "debug.h"
 #include "demo.h"
+#include "dmp.h"
 #include "encoders.h"
+#include "fusion.h"
 #include "imu.h"
+#include "imu2.h"
 #include "main.h"
 #include "mathUtils.h"
+#include "motion_fx.h"
 #include "motors.h"
+#include "odometry.h"
 #include "sensors.h"
 #include "servo.h"
 #include "stm32f4xx.h"
@@ -25,51 +34,58 @@ void mainTask(void *pvParameters) {
     if (mainTaskInit() != HAL_OK) {
         Error_Handler();
     }
+    uint32_t start = HAL_GetTick();
+    while (!isSDemoStarted) {
+        if (HAL_GetTick() - start > 5000) {
+            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+        } else {
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        }
+        vTaskDelay(100);
+    }
 
-    double line_deviation = 0;
-    // uint32_t max = 0;
-    // uint32_t min = 0xFFFFFFFF;
+    if (controlInit() != HAL_OK) {
+        Error_Handler();
+    }
+
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    IMUData_T imuData;
+    // ICM_ReadAccelGyro(&imuData);
+    double k = 0.1;
+    ICM_20948_AGMT_t agmt;
+    icm_20948_DMP_data_t dmpData;
+    double yaw, prevYaw = 0.0;
+    double dT;
+    uint32_t tick, prevTick = HAL_GetTick();
+
     while (1) {
-        // uint32_t freq = colorGetFreq(COLOR_SENSOR_3);
-        // if (freq > max) {
-        //     max = freq;
-        // }
-        // if (freq < min) {
-        //     min = freq;
-        // }
-        // uprintf("%lu %lu %lu\n",freq, min, max);
-
-        // uprintf("%lu\t",colorGetFreq(COLOR_SENSOR_2));
-        // uprintf("%lu\n",colorGetFreq(COLOR_SENSOR_3));
-
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_1));
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_2));
-        uprintf("%.3f\t", colorGetNormalizedOut(COLOR_SENSOR_3));
-        uprintf("%d %.3f\n", colorGetLineDeviation(&line_deviation), line_deviation);
-    
-        vTaskDelay(10);
+        vTaskDelay(100);
     }
 }
 
 HAL_StatusTypeDef mainTaskInit() {
-    if (ICMInit() != HAL_OK) {
-        return HAL_ERROR;
+    if (imuInit() != HAL_OK) {
+        Error_Handler();
     }
 
     if (colorSensorInit() != HAL_OK) {
-        return HAL_ERROR;
+        Error_Handler();
     }
 
     if (motorsInit() != HAL_OK) {
-        return HAL_ERROR;
+        Error_Handler();
     }
 
     if (servoInit() != HAL_OK) {
-        return HAL_ERROR;
+        Error_Handler();
+    }
+
+    if (odometryInit() != HAL_OK) {
+        Error_Handler();
     }
 
     if (encodersInit() != HAL_OK) {
-        return HAL_ERROR;
+        Error_Handler();
     }
 
     return HAL_OK;

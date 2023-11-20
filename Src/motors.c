@@ -3,6 +3,7 @@
 #include "bsp.h"
 #include "debug.h"
 #include "main.h"
+#include "mathUtils.h"
 
 uint32_t motorARR;
 HAL_StatusTypeDef setMotorDutyCycle(Motor_E motor, float dutyCycle) {
@@ -39,7 +40,7 @@ void motorSetSpeed(Motor_E motor, float speed) {
         uprintf("Invalid speed: %f\n", speed);
         return;
     }
-
+    
     if (speed < 0) {
         motorSetDir(motor, MOTOR_BWD);
         speed = -speed;
@@ -49,6 +50,9 @@ void motorSetSpeed(Motor_E motor, float speed) {
         motorSetDir(motor, MOTOR_STOP);
     }
 
+    // motor only moves at 15% duty cycle
+    #define MIN_MOTOR_MOVE_DC 14.5
+    speed = map(speed, 0, 100, MIN_MOTOR_MOVE_DC, 100);
     setMotorDutyCycle(motor, speed);
 }
 

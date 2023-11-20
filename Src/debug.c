@@ -78,7 +78,7 @@ void _handleError(char *file, int line) {
     HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)lineNumberString), strlen(lineNumberString), 1000);
 
     for (int i = 0; i < BACKTRACE_SIZE; ++i){
-		sprintf(backtraceString, "\n%p - %s@%p", backtrace[i].function, backtrace[i].name, backtrace[i].address);
+		sprintf(backtraceString, "\n%p - %s@ %p", backtrace[i].function, backtrace[i].name, backtrace[i].address);
         HAL_UART_Transmit(&DEBUG_UART_HANDLE, ((uint8_t *)backtraceString), strlen(backtraceString), 1000);
     }
 

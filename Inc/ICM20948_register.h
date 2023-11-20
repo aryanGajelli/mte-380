@@ -16,12 +16,15 @@
 // user bank 2
 #define GYRO_SMPLRT_DIV_REG 0x00
 #define GYRO_CONFIG_1_REG 0x01
+#define GYRO_CONFIG_2_REG 0x02
+#define XG_OFFS_USRH_REG 0x03
 #define ACCEL_SMPLRT_DIV_1_REG 0x10
 #define ACCEL_SMPLRT_DIV_2_REG 0x11
 #define ACCEL_CONFIG_REG 0x14
 #define ACCEL_GYRO_START_REG 0x2D
 #define ACCEL_GYRO_END_REG 0x38
-#define ACCEL_GYRO_MAG_END_REG 0x43
+#define MAG_START_REG 0x3B
+#define ACCEL_GYRO_MAG_END_REG 0x41
 
 // user bank 3
 #define I2C_MST_CTRL_REG 0x01
@@ -45,7 +48,7 @@ typedef enum UserBankSel_E {
 
 // clock selctions
 typedef enum ClockSel_E {
-    CLK_BEST_AVAIL = 1,
+    CLK_BEST_AVAIL = 3,
     CLK_INTERNAL_20MHZ = 0,
     CLK_STOP = 7
 } ClockSel_E;

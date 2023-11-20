@@ -29,14 +29,15 @@ HAL_StatusTypeDef ICM_ReadBytes(uint8_t reg, uint8_t *pData, size_t size)  // **
     return HAL_OK;
 }
 
-void ICM_WriteBytes(uint8_t reg, uint8_t *pData, size_t size)  // ***
+HAL_StatusTypeDef ICM_WriteBytes(uint8_t reg, uint8_t *pData, size_t size)  // ***
 {
     WRITE_EN(reg);
-    HAL_SPI_Transmit_DMA(&IMU_SPI_HANDLE, &reg, 1);
-    HAL_SPI_Transmit_DMA(&IMU_SPI_HANDLE, pData, size);
+    if (HAL_SPI_Transmit_DMA(&IMU_SPI_HANDLE, &reg, 1) != HAL_OK) return HAL_ERROR;
+    if (HAL_SPI_Transmit_DMA(&IMU_SPI_HANDLE, pData, size) != HAL_OK) return HAL_ERROR;
     while (HAL_SPI_GetState(&IMU_SPI_HANDLE) != HAL_SPI_STATE_READY)
         ;
     IMU_CS_DIS();
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef ICM_ReadOneByte(uint8_t reg, uint8_t *pData) {

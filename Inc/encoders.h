@@ -9,13 +9,18 @@ typedef enum {
 } Encoder_E;
 
 typedef struct Encoder_T {
-    float velocity;
-    int32_t position;
-    int32_t prevPosition;
+    float ticks_per_s;
+    int32_t ticks;
+    int32_t prevTicks;
     int32_t overflow;
+
+    double dist;
     Encoder_E encoderSide;
     uint32_t timeStamp;
 } Encoder_T;
+
+extern Encoder_T *encLeft;
+extern Encoder_T *encRight;
 
 void encoderUpdate(Encoder_T *encoder);
 void encoderHandleOverflow(Encoder_E encoderSide, TIM_HandleTypeDef *htim);
