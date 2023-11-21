@@ -43,7 +43,7 @@ double odometryGet2DDist(Pose_T a, Pose_T b) {
 }
 
 double odometryGet2DAngle(Pose_T a, Pose_T b) {
-    return atan2(a.x - b.x, a.y - b.y) * 180 / PI;
+    return RAD_TO_DEG(atan2(a.y - b.y, a.x - b.x));
 }
 
 double odometryDot(Pose_T a, Pose_T b) {
@@ -125,16 +125,14 @@ void odometryUpdate() {
     encoderUpdate(encLeft);
     encoderUpdate(encRight);
     xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
-    dTheta = yaw - pose.theta;
-    pose.theta = yaw;
+    pose.theta = adjustTurn(yaw + 90);
 
     double dL = encLeft->dist - prevDistL;
     double dR = encRight->dist - prevDistR;
-    double LR = (encLeft->dist + encRight->dist) / 2;
     double d = (dL + dR) / 2;
 
-    pose.x += d * sin((pose.theta + dTheta / 2) * PI / 180);
-    pose.y += d * cos((pose.theta + dTheta / 2) * PI / 180);
+    pose.x += d * cos((pose.theta) * PI / 180);
+    pose.y += d * sin((pose.theta) * PI / 180);
     xSemaphoreGive(poseMutexHandle);
 
     prevDistL = encLeft->dist;
