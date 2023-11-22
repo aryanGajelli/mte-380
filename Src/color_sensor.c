@@ -6,6 +6,7 @@
 #include "stm32f4xx_hal.h"
 
 uint32_t F_CLK;
+ColorSensor_T colorSensors;
 
 #define COLOR_1_EN() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_RESET)
 #define COLOR_1_DIS() HAL_GPIO_WritePin(COLOR_1_CS_GPIO_Port, COLOR_1_CS_Pin, GPIO_PIN_SET)
@@ -21,6 +22,10 @@ HAL_StatusTypeDef colorSensorInit() {
     COLOR_2_DIS();
     COLOR_3_DIS();
 
+    colorSensors = (ColorSensor_T){.lineDeviation = 0,
+                                   .normalizedOut = {0, 0, 0},
+                                   .freq = {0, 0, 0},
+                                   .surface = SURFACE_WOOD};
     F_CLK = HAL_RCC_GetSysClockFreq();
     if (HAL_TIM_Encoder_Start(&COLOR_TIMER_HANDLE, TIM_CHANNEL_ALL) != HAL_OK) {
         return HAL_ERROR;
@@ -36,14 +41,22 @@ HAL_StatusTypeDef colorSensorInit() {
  */
 uint32_t colorGetFreq(ColorSensor_E sensor) {
     colorSelectSensor(sensor);
-    static const uint32_t DELAY_TIME_MS = 2;
-    int32_t start = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
-    vTaskDelay(DELAY_TIME_MS);
-    int32_t end = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
-    if (start < end) {
-        start += __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
+    static const uint32_t DELAY_TIME_MS = 3;
+    static TickType_t lastWakeTime;
+    lastWakeTime = xTaskGetTickCount();
+    taskENTER_CRITICAL();
+    uint32_t start = HAL_GetTick();
+    uint32_t c1 = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
+    taskEXIT_CRITICAL();
+    vTaskDelayUntil(&lastWakeTime, DELAY_TIME_MS);
+    taskENTER_CRITICAL();
+    uint32_t c2 = __HAL_TIM_GET_COUNTER(&COLOR_TIMER_HANDLE);
+    uint32_t end = HAL_GetTick();
+    taskEXIT_CRITICAL();
+    if (c1 < c2) {
+        c1 += __HAL_TIM_GET_AUTORELOAD(&COLOR_TIMER_HANDLE);
     }
-    return (uint32_t)(1000. / (DELAY_TIME_MS * 2.) * (start - end));
+    return (uint32_t)(500. / (end - start) * (c1 - c2));
 }
 
 void colorSetFreqScaling(FreqScale_E freqScale) {
@@ -93,19 +106,18 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
  */
 double colorGetNormalizedOut(ColorSensor_E sensor) {
     // Home Values
-    // static const uint32_t c1_wood = 49500, c2_wood = 66500, c3_wood = 44500;
-    // static const uint32_t c1_tape = 30300, c2_tape = 35200, c3_tape = 26900;
+    static const uint32_t c1_wood = 41500, c2_wood = 55500, c3_wood = 39500;
+    static const uint32_t c1_tape = 27300, c2_tape = 28000, c3_tape = 23500;
     // Field Values
-    static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 60500;
-    static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 27000;
-    uint32_t freq = colorGetFreq(sensor);
+    // static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 60500;
+    // static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 27000;
     switch (sensor) {
         case COLOR_SENSOR_1:
-            return map(freq, c1_tape, c1_wood, 0, 1);
+            return map(colorSensors.freq[0], c1_tape, c1_wood, 0, 1);
         case COLOR_SENSOR_2:
-            return map(freq, c2_tape, c2_wood, 0, 1);
+            return map(colorSensors.freq[1], c2_tape, c2_wood, 0, 1);
         case COLOR_SENSOR_3:
-            return map(freq, c3_tape, c3_wood, 0, 1);
+            return map(colorSensors.freq[2], c3_tape, c3_wood, 0, 1);
         default:
             return -255;
     }
@@ -148,7 +160,7 @@ SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
  */
 SurfaceType_E colorGetLineDeviation(double* out) {
     // measured sensor displacements from center of robot
-    static const double sensorLocs_mm[3] = {15, 0, -17.95};
+    static const double sensorLocs_mm[3] = {-15, 0, 17.95};
 
     double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
     double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
@@ -157,7 +169,7 @@ SurfaceType_E colorGetLineDeviation(double* out) {
     double num = sensorLocs_mm[0] * c3 + sensorLocs_mm[1] * c2 + sensorLocs_mm[2] * c1;
     double denom = c1 + c2 + c3;
 
-    *out = num / denom + sensorLocs_mm[1];
+    *out = num; // denom + sensorLocs_mm[1];
 
     return colorDetectSurface(c1, c2, c3);
 }

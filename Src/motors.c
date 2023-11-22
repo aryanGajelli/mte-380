@@ -62,8 +62,10 @@ void motorSoftStop(){
 }
 
 void motorHardStop(){
-    motorSetDir(MOTOR_LEFT, 0);
-    motorSetDir(MOTOR_RIGHT, 0);
+    setMotorDutyCycle(MOTOR_LEFT, 0);
+    setMotorDutyCycle(MOTOR_RIGHT, 0);
+    motorSetDir(MOTOR_LEFT, MOTOR_STOP);
+    motorSetDir(MOTOR_RIGHT, MOTOR_STOP);
 }
 
 HAL_StatusTypeDef motorsInit(void) {

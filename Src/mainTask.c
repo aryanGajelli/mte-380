@@ -45,11 +45,42 @@ void mainTask(void *pvParameters) {
     if (controlInit() != HAL_OK) {
         Error_Handler();
     }
+#define NUM_SAMPLES 10
+    uint32_t c1[NUM_SAMPLES];
+    uint32_t c2[NUM_SAMPLES];
+    uint32_t c3[NUM_SAMPLES];
 
+    uint32_t counter[3] = {0, 0, 0};
+
+    uint32_t sum[3] = {0, 0, 0};
     while (1) {
-        // print line deviation
-        
-        vTaskDelay(100);
+        // color readings already has delays of 5ms each
+        // moving average of samples
+        uint32_t val = colorGetFreq(COLOR_SENSOR_1);
+        sum[0] = sum[0] + val - c1[counter[0]];
+        colorSensors.freq[0] = sum[0] / NUM_SAMPLES;
+        c1[counter[0]] = val;
+        counter[0] = (counter[0] + 1) % NUM_SAMPLES;
+
+        // val = colorGetFreq(COLOR_SENSOR_2);
+        // sum[1] = sum[1] + val - c2[counter[1]];
+        // colorSensors.freq[1] = sum[1] / NUM_SAMPLES;
+        // c2[counter[1]] = val;
+        // counter[1] = (counter[1] + 1) % NUM_SAMPLES;
+
+        val = colorGetFreq(COLOR_SENSOR_3);
+        sum[2] = sum[2] + val - c3[counter[2]];
+        colorSensors.freq[2] = sum[2] / NUM_SAMPLES;
+        c3[counter[2]] = val;
+        counter[2] = (counter[2] + 1) % NUM_SAMPLES;
+
+        taskENTER_CRITICAL();
+        colorSensors.normalizedOut.x = colorGetNormalizedOut(COLOR_SENSOR_1);
+        colorSensors.normalizedOut.y = colorGetNormalizedOut(COLOR_SENSOR_2);
+        colorSensors.normalizedOut.z = colorGetNormalizedOut(COLOR_SENSOR_3);
+        colorSensors.surface = colorGetLineDeviation(&colorSensors.lineDeviation);
+        taskEXIT_CRITICAL();
+        vTaskDelay(5);
     }
 }
 

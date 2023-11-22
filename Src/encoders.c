@@ -8,8 +8,8 @@
 #include "stm32f4xx_hal.h"
 #include "arm_math.h"
 
-volatile Encoder_T encoderLeft;
-volatile Encoder_T encoderRight;
+Encoder_T encoderLeft;
+Encoder_T encoderRight;
 
 Encoder_T *encLeft = &encoderLeft;
 Encoder_T *encRight = &encoderRight;
@@ -17,7 +17,7 @@ Encoder_T *encRight = &encoderRight;
 void encoderUpdate(Encoder_T *encoder) {
     encoder->prevTicks = encoder->ticks;
     uint32_t timeStamp = HAL_GetTick();
-    int8_t dir;
+    int8_t dir = 0;
     TIM_HandleTypeDef *htim;
     if (encoder == &encoderLeft) {
         htim = &ENCODER_TIMER_LEFT_HANDLE;
@@ -34,9 +34,6 @@ void encoderUpdate(Encoder_T *encoder) {
 
     encoder->ticks = dir * (counter + encoder->overflow * arr);
     encoder->ticks_per_s = 1000 * (encoder->ticks - encoder->prevTicks) / (float)(timeStamp - encoder->timeStamp);
-#define TICKS_PER_REVOLUTION 540
-#define WHEEL_DIAMETER 42  // mm
-#define ENCODER_DISTANCE_PER_TICK (WHEEL_DIAMETER * PI / TICKS_PER_REVOLUTION)
     encoder->dist = encoder->ticks * ENCODER_DISTANCE_PER_TICK;
     encoder->timeStamp = timeStamp;
 }

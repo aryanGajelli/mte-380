@@ -125,14 +125,15 @@ void odometryUpdate() {
     encoderUpdate(encLeft);
     encoderUpdate(encRight);
     xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
+    dTheta = yaw - pose.theta;
     pose.theta = adjustTurn(yaw + 90);
 
     double dL = encLeft->dist - prevDistL;
     double dR = encRight->dist - prevDistR;
     double d = (dL + dR) / 2;
 
-    pose.x += d * cos((pose.theta) * PI / 180);
-    pose.y += d * sin((pose.theta) * PI / 180);
+    pose.x += d * cos(DEG_TO_RAD(pose.theta + dTheta/2));
+    pose.y += d * sin(DEG_TO_RAD(pose.theta + dTheta/2));
     xSemaphoreGive(poseMutexHandle);
 
     prevDistL = encLeft->dist;

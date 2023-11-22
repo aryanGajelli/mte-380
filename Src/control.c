@@ -30,18 +30,92 @@ void controlTask(void *pvParameters) {
     uprintf("controlTask\n");
 
     double line;
+    controlLineFollowing();
+#define PATH_LEN 4
+    vector3_t path[PATH_LEN] = {{0,0}, {0, 100}, {-200,250}, {-350, 200}, {-450, 75}, {-600, 100}};
+    // controlPurePursuit(path, PATH_LEN);
     Pose_T *pose = odometryGetPose();
+    vector3_t c = {.x = 0.0, .y = 10.75};
+    vector3_t out1, out2;
+    size_t i = 0;
+    double lookAheadRadius = 10;
+    // IntersectionType_E type = circleSegmentIntersection(c, lookAheadRadius, path[i], path[i + 1], &out1, &out2);
+    // vector3_t targetPoint = pickClosestIntersection(path[i + 1], out1, out2);
+    // uprintf("t:%d %.2f %.2f\n", type, targetPoint.x, targetPoint.y);
+    // uprintf("o1: %.2f %.2f\n", out1.x, out1.y);
+    // uprintf("o2: %.2f %.2f\n", out2.x, out2.y);
     while (1) {
-        // uprintf("%.3f %.3f %.3f %d %.3f\n", colorGetNormalizedOut(COLOR_SENSOR_1), colorGetNormalizedOut(COLOR_SENSOR_2), colorGetNormalizedOut(COLOR_SENSOR_3), colorGetLineDeviation(&line), line);
+        // IntersectionType_E type = circleSegmentIntersection(pose->v, lookAheadRadius, path[i], path[i+1], &out1, &out2);
+        // vector3_t targetPoint = pickClosestIntersection(path[i+1], out1, out2);
+        // uprintf("t:%d %.2f %.2f p:%.2f %.2f\n", type, targetPoint.x, targetPoint.y, pose->x, pose->y);
+        // uprintf("%d %d %d\t", colorSensors.freq[0], colorSensors.freq[1], colorSensors.freq[2]);
+        // uprintf("%.3f %.3f %.3f %d %f\n", colorSensors.normalizedOut.x, colorSensors.normalizedOut.y, colorSensors.normalizedOut.z, colorSensors.surface, colorSensors.lineDeviation);
         uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
 
+void controlPurePursuit(vector3_t *path, size_t pathLen) {
+    double constLinVel = 10;
+    double lookAheadRadius = 30;
+    size_t lastFoundIndex = 0;
+
+    double kp = 0.5, kd = 0.0;
+    PurePursuitOutput_T prevPP;
+    PurePursuitOutput_T PP = {0, 0, 0, 0, 0};
+    while (lastFoundIndex < pathLen) {
+        prevPP = PP;
+        PP = controlPurePursuitStep(path, pathLen, lookAheadRadius, lastFoundIndex);
+        lastFoundIndex = PP.lastFoundIndex;
+        double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
+        motorSetSpeed(MOTOR_LEFT, clamp(constLinVel - angVel, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(constLinVel + angVel, -100, 100));
+        // uprintf("p: %.3f %.3f %.3f %d %.3f\n", PP.targetPoint.x, PP.targetPoint.y, PP.angError, PP.lastFoundIndex, angVel);
+        vTaskDelay(1);
+    }
+    controlGoToPoint((Pose_T)path[pathLen - 1]);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+}
+
+PurePursuitOutput_T controlPurePursuitStep(vector3_t *path, size_t pathLen, double lookAheadRadius, size_t lastFoundIndex) {
+    vector3_t targetPoint = {NAN, NAN, NAN};
+    IntersectionType_E type;
+    Pose_T *pose = odometryGetPose();
+    size_t i;
+    for (i = lastFoundIndex; i < pathLen - 1; i++) {
+        vector3_t out1, out2;
+        type = circleSegmentIntersection(pose->v, lookAheadRadius, path[i], path[i + 1], &out1, &out2);
+        if (type == NO_INTERSECTION) {
+            targetPoint = path[lastFoundIndex];
+            break;
+        }
+        if (type == ONE_INTERSECTION) {
+            targetPoint = out1;
+        }
+        if (type == TWO_INTERSECTIONS) {
+            targetPoint = pickClosestIntersection(path[i+1], out1, out2);
+        }
+        if (dist(targetPoint.x, targetPoint.y, path[i + 1].x, path[i + 1].y) < dist(pose->x, pose->y, path[i + 1].x, path[i + 1].y)) {
+            lastFoundIndex = i;
+            break;
+        } else {
+            lastFoundIndex = i + 1;
+        }
+    }
+
+    uprintf("ps: %d %.2f %.2f i: %d %d p: %.2f %.2f %.2f\n", type, targetPoint.x, targetPoint.y, i, lastFoundIndex, pose->x, pose->y, pose->theta);
+    // we now have target point
+    double targetAng = RAD_TO_DEG(atan2(targetPoint.y - pose->y, targetPoint.x - pose->x));
+    double angError = adjustTurn(targetAng - pose->theta);
+
+    return (PurePursuitOutput_T){.targetPoint = targetPoint, .lastFoundIndex = lastFoundIndex, .angError = angError};
+}
+
 void controlTestSquareAbsolute() {
-    controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 150, .y = 150, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 150, .y = 0, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 0, .y = 300, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 300, .y = 300, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 300, .y = 0, .theta = 0});
     controlGoToPoint((Pose_T){.x = 0, .y = 0, .theta = 0});
 }
 
@@ -108,31 +182,34 @@ void controlApprochLego() {
 }
 
 void controlLineFollowing() {
-    double lineDeviation = 0;
-    colorGetLineDeviation(&lineDeviation);
     double target = 0;
-    double prevError = target - lineDeviation;
+    double prevError = target - colorSensors.lineDeviation;
     double error;
-    double constSpeed = 40;
-    double kp = 0.5, kd = 0.0, ki = 0.00;
-
-    while (1) {
-        // Pose_T pose = odometryGetPose();
-        SurfaceType_E surf = colorGetLineDeviation(&lineDeviation);
-        if (surf != SURFACE_TAPE) {
-            break;
-        }
-        error = target - lineDeviation;
+    double constSpeed = 10;
+    double kp = 0.8, kd = 0.5, ki = 0.00;
+    Pose_T *pose = odometryGetPose();
+    double dotError;
+    double angError;
+    do {
+        dotError = odometryDotError((Pose_T){.x = -85, .y = 180}, *pose);
+        error = target - colorSensors.lineDeviation;
         double speed = kp * error + kd * (error - prevError) + ki * error;
+        // angError =
+        // speed = clamp(speed, -100, 100);
+        // if (fabs(error) < 1) {
+        //     speed = 0;
+        // }
         prevError = error;
-        if (speed > 100) speed = 100;
-        if (speed < -100) speed = -100;
-        motorSetSpeed(MOTOR_LEFT, constSpeed + speed);
-        motorSetSpeed(MOTOR_RIGHT, constSpeed - speed);
-        uprintf("l: %.3f %.3f %.3f\n", error, speed, lineDeviation);
+        // if (colorSensors.surface != SURFACE_TAPE) {
+        //     break;
+        // }
+        motorSetSpeed(MOTOR_LEFT, clamp(constSpeed - speed, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(constSpeed + speed, -100, 100));
+        uprintf("l: %.3f %.3f %.3f %d %.3f\n", pose->x, pose->y, pose->theta, colorSensors.surface, colorSensors.lineDeviation);
+        // vTaskDelay(1);
         // if (dist(pose->x, pose->y, 0, 0) > 300)
         //     break;
-    }
+    } while (dotError > 100);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
 }
@@ -154,7 +231,7 @@ void controlTurnToHeading(double targetDeg) {
         prevError = error;
         error = adjustTurn(targetDeg - pose->theta);
         if (fabs(error) < 5) {
-            integral += error;
+            integral = 0.99 * integral + error;
         } else {
             integral = 0;
         }
@@ -287,7 +364,7 @@ void controlGoToPoint(Pose_T targetPose) {
     motorHardStop(MOTOR_RIGHT);
 }
 
-void controlGoToPoseRASETE(Pose_T targetPose) {
+void controlGoToPoseRAMSETE(Pose_T targetPose) {
     static const double ACCEPTABLE_ERROR = 1;
     Pose_T *pose = odometryGetPose();
     double thetaError = targetPose.theta - pose->theta;

@@ -65,14 +65,14 @@ IntersectionType_E circleSegmentIntersection(vector3_t center, double radius, ve
     IntersectionType_E ret = NO_INTERSECTION;
 
     const double EPSILON = 1e-6;
-    if (max.x - min.x < EPSILON && fabs(sol1.x - min.x) < EPSILON) {
+    if (fabs(max.x - min.x) < EPSILON && fabs(sol1.x - min.x) < EPSILON) {
         if (sol1.y >= min.y && sol1.y <= max.y) {
             sol1.x += center.x;
             sol1.y += center.y;
             *out1 = sol1;
             ret++;
         }
-    } else if (max.y - min.y < EPSILON && fabs(sol1.y - min.y) < EPSILON) {
+    } else if (fabs(max.y - min.y) < EPSILON && fabs(sol1.y - min.y) < EPSILON) {
         if (sol1.x >= min.x && sol1.x <= max.x) {
             sol1.x += center.x;
             sol1.y += center.y;
@@ -86,7 +86,7 @@ IntersectionType_E circleSegmentIntersection(vector3_t center, double radius, ve
         ret++;
     }
 
-    if (max.x - min.x < EPSILON && fabs(sol2.x - min.x) < EPSILON) {
+    if (fabs(max.x - min.x) < EPSILON && fabs(sol2.x - min.x) < EPSILON) {
         if (sol2.y >= min.y && sol2.y <= max.y) {
             sol2.x += center.x;
             sol2.y += center.y;
@@ -96,7 +96,7 @@ IntersectionType_E circleSegmentIntersection(vector3_t center, double radius, ve
                 *out2 = sol2;
             ret++;
         }
-    } else if (max.y - min.y < EPSILON && fabs(sol2.y - min.y) < EPSILON) {
+    } else if (fabs(max.y - min.y) < EPSILON && fabs(sol2.y - min.y) < EPSILON) {
         if (sol2.x >= min.x && sol2.x <= max.x) {
             sol2.x += center.x;
             sol2.y += center.y;
@@ -118,6 +118,7 @@ IntersectionType_E circleSegmentIntersection(vector3_t center, double radius, ve
             *out2 = sol2;
         ret++;
     }
+    
     return ret;
 }
 

@@ -2,7 +2,7 @@
 #define __COLOR_SENSOR_H__
 
 #include "stm32f4xx_hal.h"
-
+#include "mathUtils.h"
 typedef enum {
     RED = 0b00,
     GREEN = 0b11,
@@ -31,6 +31,14 @@ typedef enum {
     SERFACE_ERROR
 } SurfaceType_E;
 
+typedef struct ColorSensor_T {
+    double lineDeviation;
+    vector3_t normalizedOut;
+    uint32_t freq[3];
+    SurfaceType_E surface;
+} ColorSensor_T;
+
+extern ColorSensor_T colorSensors;
 HAL_StatusTypeDef colorSensorInit();
 uint32_t colorGetFreq(ColorSensor_E sensor);
 void colorSetFreqScaling(FreqScale_E freqScale);
