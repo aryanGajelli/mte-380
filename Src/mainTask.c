@@ -45,15 +45,9 @@ void mainTask(void *pvParameters) {
     if (controlInit() != HAL_OK) {
         Error_Handler();
     }
-#define NUM_SAMPLES 10
-    uint32_t c1[NUM_SAMPLES];
-    uint32_t c2[NUM_SAMPLES];
-    uint32_t c3[NUM_SAMPLES];
 
-    uint32_t counter[3] = {0, 0, 0};
-
-    uint32_t sum[3] = {0, 0, 0};
     while (1) {
+        colorUpdate();
         // // color readings already has delays of 5ms each
         // // moving average of samples
         // uint32_t val = colorGetFreq(COLOR_SENSOR_1);

@@ -98,6 +98,40 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
             return HAL_ERROR;
     }
 }
+#define NUM_SAMPLES 10
+uint32_t c1[NUM_SAMPLES];
+uint32_t c2[NUM_SAMPLES];
+uint32_t c3[NUM_SAMPLES];
+
+uint32_t counter[3] = {0, 0, 0};
+
+uint32_t sum[3] = {0, 0, 0};
+void colorUpdate() {
+    // color readings already has delays of 5ms each
+    // moving average of samples
+    uint32_t val = colorGetFreq(COLOR_SENSOR_1);
+    sum[0] = sum[0] + val - c1[counter[0]];
+    colorSensors.freq[0] = sum[0] / NUM_SAMPLES;
+    c1[counter[0]] = val;
+    counter[0] = (counter[0] + 1) % NUM_SAMPLES;
+
+    // val = colorGetFreq(COLOR_SENSOR_2);
+    // sum[1] = sum[1] + val - c2[counter[1]];
+    // colorSensors.freq[1] = sum[1] / NUM_SAMPLES;
+    // c2[counter[1]] = val;
+    // counter[1] = (counter[1] + 1) % NUM_SAMPLES;
+
+    val = colorGetFreq(COLOR_SENSOR_3);
+    sum[2] = sum[2] + val - c3[counter[2]];
+    colorSensors.freq[2] = sum[2] / NUM_SAMPLES;
+    c3[counter[2]] = val;
+    counter[2] = (counter[2] + 1) % NUM_SAMPLES;
+
+    colorSensors.normalizedOut.x = colorGetNormalizedOut(COLOR_SENSOR_1);
+    colorSensors.normalizedOut.y = colorGetNormalizedOut(COLOR_SENSOR_2);
+    colorSensors.normalizedOut.z = colorGetNormalizedOut(COLOR_SENSOR_3);
+    colorSensors.surface = colorGetLineDeviation(&colorSensors.lineDeviation);
+}
 
 /**
  * @brief Normalizes the values of all 3 sensors to be between 0 and 1.
@@ -106,11 +140,11 @@ HAL_StatusTypeDef colorSelectSensor(ColorSensor_E sensor) {
  */
 double colorGetNormalizedOut(ColorSensor_E sensor) {
     // Home Values
-    static const uint32_t c1_wood = 41500, c2_wood = 55500, c3_wood = 39500;
-    static const uint32_t c1_tape = 27300, c2_tape = 28000, c3_tape = 23500;
+    // static const uint32_t c1_wood = 41500, c2_wood = 55500, c3_wood = 39500;
+    // static const uint32_t c1_tape = 27300, c2_tape = 28000, c3_tape = 23500;
     // Field Values
-    // static const uint32_t c1_wood = 65800, c2_wood = 72000, c3_wood = 60500;
-    // static const uint32_t c1_tape = 26800, c2_tape = 23000, c3_tape = 27000;
+    static const uint32_t c1_wood = 45800, c2_wood = 60000, c3_wood = 41500;
+    static const uint32_t c1_tape = 21500, c2_tape = 21000, c3_tape = 20000;
     switch (sensor) {
         case COLOR_SENSOR_1:
             return map(colorSensors.freq[0], c1_tape, c1_wood, 0, 1);
@@ -130,7 +164,7 @@ double colorGetNormalizedOut(ColorSensor_E sensor) {
  * @param c3 The normalized value of color sensor 3.
  */
 SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
-    static const double WOOD_THRESHOLD = 0.95;
+    static const double WOOD_THRESHOLD = 0.8;
     static const double BLACK_THRESHOLD = 0.06;
     // if 2 sensors are above the wood threshold, then we are on wood
     if (c1 > WOOD_THRESHOLD && c2 > WOOD_THRESHOLD)
@@ -160,16 +194,16 @@ SurfaceType_E colorDetectSurface(double c1, double c2, double c3) {
  */
 SurfaceType_E colorGetLineDeviation(double* out) {
     // measured sensor displacements from center of robot
-    static const double sensorLocs_mm[3] = {-15, 0, 17.95};
+    static const double sensorLocs_mm[3] = {15, 0, -17.95};
 
-    double c1 = colorGetNormalizedOut(COLOR_SENSOR_1);
-    double c2 = colorGetNormalizedOut(COLOR_SENSOR_2);
-    double c3 = colorGetNormalizedOut(COLOR_SENSOR_3);
+    double c1 = colorSensors.normalizedOut.x;
+    double c2 = colorSensors.normalizedOut.y;
+    double c3 = colorSensors.normalizedOut.z;
 
-    double num = sensorLocs_mm[0] * c3 + sensorLocs_mm[1] * c2 + sensorLocs_mm[2] * c1;
+    double num = sensorLocs_mm[0] * (1-c3) + sensorLocs_mm[1] * (1-c2) + sensorLocs_mm[2] * (1-c1);
     double denom = c1 + c2 + c3;
 
-    *out = num; // denom + sensorLocs_mm[1];
+    *out = num;
 
     return colorDetectSurface(c1, c2, c3);
 }

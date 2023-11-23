@@ -33,11 +33,10 @@ void controlTask(void *pvParameters) {
 
     double line;
     Pose_T *pose = odometryGetPose();
-    controlLineFollowing();
-
+    // controlLineFollowing();
+    controlFullSequence();
     // controlTurnToLego();
     // servoSetAngle(CLAW_OPEN_ANGLE);
-    
 
     vector3_t c = {.x = 0.0, .y = 10.75};
     vector3_t out1, out2;
@@ -52,22 +51,45 @@ void controlTask(void *pvParameters) {
         // IntersectionType_E type = circleSegmentIntersection(pose->v, lookAheadRadius, path[i], path[i+1], &out1, &out2);
         // vector3_t targetPoint = pickClosestIntersection(path[i+1], out1, out2);
         // uprintf("t:%d %.2f %.2f p:%.2f %.2f\n", type, targetPoint.x, targetPoint.y, pose->x, pose->y);
-        // uprintf("%d %d %d\t", colorSensors.freq[0], colorSensors.freq[1], colorSensors.freq[2]);
+        // colorUpdate();
+        // uprintf("%d %d %d\n", colorSensors.freq[0], colorSensors.freq[1], colorSensors.freq[2]);
         // uprintf("%.3f %.3f %.3f %d %f\n", colorSensors.normalizedOut.x, colorSensors.normalizedOut.y, colorSensors.normalizedOut.z, colorSensors.surface, colorSensors.lineDeviation);
-        uprintf("%.3f %.3f %.3f %.3f\n", ADC_to_Volt(adcBuf[5]), pose->x, pose->y, pose->theta);
+        // uprintf("%.3f %.3f %.3f %.3f\n", ADC_to_Volt(adcBuf[5]), pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
 
 void controlFullSequence() {
-    Pose_T *pose = odometryGetPose();
-    vector3_t path[] = {{0, 0}, {0, 200}, {-150, 500}, {-400, 750}};  //, {-450, 75}, {-600, 100}};
-    size_t PATH_LEN = sizeof(path) / sizeof(path[0]);
-    // controlApproximateCurve(100, 10);
-    controlPurePursuit(path, PATH_LEN);
-    double heading = RAD_TO_DEG(atan2(path[PATH_LEN - 1].y - pose->y, path[PATH_LEN - 1].x - pose->x));
-    controlTurnToHeading(heading);
-    servoSetAngle(CLAW_CLOSED_ANGLE);
+    vector3_t path[] = {
+        {0, 150},
+        {-100, 300},
+        {-200, 420},
+        {-300, 510},
+        {-500, 580},
+        {-750, 670},
+        {-900, 510},
+    };
+    size_t pathLen = sizeof(path) / sizeof(path[0]);
+
+    for (size_t i = 0; i < 2; i++) {
+        controlGoToPoint((Pose_T)path[i]);
+    }
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+    
+    // Pose_T *pose = odometryGetPose();
+    // vector3_t path[] = {{pose->x, pose->y}, {-100, 300}, {-300, 500}, {-500, 600}, {-700, 750}};  //, {-450, 75}, {-600, 100}};
+    // size_t pathLen = sizeof(path) / sizeof(path[0]);
+    // // controlApproximateCurve(100, 10);
+    // controlPurePursuit(path, pathLen);
+
+    // // vector3_t path2[] = {{pose->x, pose->y}, {-900, 900}};
+    // // pathLen = sizeof(path2) / sizeof(path2[0]);
+    // // controlPurePursuit(path2, pathLen);
+    // // controlGoToPoint((Pose_T)path[pathLen - 1]);
+    // // double heading = RAD_TO_DEG(atan2(path[PATH_LEN - 1].y - pose->y, path[PATH_LEN - 1].x - pose->x));
+    // // controlTurnToHeading(heading);
+    // servoSetAngle(CLAW_CLOSED_ANGLE);
 }
 
 void controlTurnToLego() {
@@ -91,7 +113,7 @@ void controlTurnToLego() {
             motorHardStop(MOTOR_LEFT);
             motorHardStop(MOTOR_RIGHT);
             vTaskDelay(200);
-            target = startPose.theta - arcAngle/2;
+            target = startPose.theta - arcAngle / 2;
         }
 
         error = adjustTurn(target - pose->theta);
@@ -122,7 +144,7 @@ void controlPurePursuit(vector3_t *path, size_t pathLen) {
     double lookAheadRadius = 100;
     size_t lastFoundIndex = 0;
 
-    double kp = 0.5, kd = 0.5;
+    double kp = 0.2, kd = 0.5;
     double kpL = 0.5, kdL = 0.5;
     PurePursuitOutput_T prevPP;
     PurePursuitOutput_T PP = {0, 0, 0, 0, 0};
@@ -133,16 +155,19 @@ void controlPurePursuit(vector3_t *path, size_t pathLen) {
         prevPP = PP;
         PP = controlPurePursuitStep(path, pathLen, lookAheadRadius, lastFoundIndex);
         lastFoundIndex = PP.lastFoundIndex;
-        double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
-        prevErrorLin = errorLin;
         errorLin = odometryDotError((Pose_T)PP.targetPoint, *pose);
-
-        linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
 
         if (lastFoundIndex >= pathLen - 3) {
             kp = (pathLen - lastFoundIndex) / 5.;
         }
 
+        double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
+        prevErrorLin = errorLin;
+
+        linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
+        if (lastFoundIndex == pathLen - 2) {
+            linVel = clamp(linVel, -20, 20);
+        }
         motorSetSpeed(MOTOR_LEFT, clamp(linVel - angVel, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(linVel + angVel, -100, 100));
         // uprintf("p: %.3f %.3f %.3f %d %.3f\n", PP.targetPoint.x, PP.targetPoint.y, PP.angError, PP.lastFoundIndex, angVel);
@@ -174,7 +199,7 @@ PurePursuitOutput_T controlPurePursuitStep(vector3_t *path, size_t pathLen, doub
             targetPoint = pickClosestIntersection(path[i + 1], out1, out2);
         }
         if (dist(targetPoint.x, targetPoint.y, path[i + 1].x, path[i + 1].y) < dist(pose->x, pose->y, path[i + 1].x, path[i + 1].y)) {
-            lastFoundIndex = i;
+            lastFoundIndex = i + 1;
             break;
         } else {
             lastFoundIndex = i + 1;
@@ -259,24 +284,18 @@ void controlApprochLego() {
 }
 
 void controlLineFollowing() {
+    // controlGoToPoint((Pose_T){.x = -30, .y = 150, .theta = 0});
+    // controlMoveForward(120, 0.6);
     double target = 0;
     double prevError = target - colorSensors.lineDeviation;
     double error;
-    double constSpeed = 30;
-    double kp = 1, kd = 0.5, ki = 0.00;
+    double constSpeed = 60;
+    double kp = 2, kd = 1, ki = 0.00;
     Pose_T *pose = odometryGetPose();
     double dotError;
     double angError;
     do {
-        colorSensors.freq[0] = colorGetFreq(COLOR_SENSOR_1);
-        colorSensors.freq[1] = colorGetFreq(COLOR_SENSOR_2);
-        colorSensors.freq[2] = colorGetFreq(COLOR_SENSOR_3);
-
-        colorSensors.normalizedOut.x = colorGetNormalizedOut(COLOR_SENSOR_1);
-        colorSensors.normalizedOut.y = colorGetNormalizedOut(COLOR_SENSOR_2);
-        colorSensors.normalizedOut.z = colorGetNormalizedOut(COLOR_SENSOR_3);
-
-        colorSensors.surface = colorGetLineDeviation(&colorSensors.lineDeviation);
+        // colorUpdate();
         dotError = odometryDotError((Pose_T){.x = -1400, .y = 300}, *pose);
         error = target - colorSensors.lineDeviation;
         double speed = kp * error + kd * (error - prevError) + ki * error;
@@ -291,13 +310,16 @@ void controlLineFollowing() {
         // }
         motorSetSpeed(MOTOR_LEFT, clamp(constSpeed - speed, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(constSpeed + speed, -100, 100));
-        uprintf("l: %.3f %.3f %.3f %d %.3f\n", pose->x, pose->y, pose->theta, colorSensors.surface, colorSensors.lineDeviation);
+        uprintf("l: %.3f %.3f %.3f %d %.3f\n", pose->x, pose->y, speed, colorSensors.surface, colorSensors.lineDeviation);
         // vTaskDelay(1);
         // if (dist(pose->x, pose->y, 0, 0) > 300)
         //     break;
     } while (fabs(dotError) > 50);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
+
+    double heading = RAD_TO_DEG(atan2(300 - pose->y, -1800 - pose->x));
+    controlTurnToHeading(heading);
 }
 
 void controlTurnToHeading(double targetDeg) {
@@ -401,7 +423,7 @@ void controlGoToPoint(Pose_T targetPose) {
     Pose_T startPose = *pose;
 
     double targetTheta = odometryGet2DAngle(targetPose, startPose);
-    controlTurnToHeading(targetTheta);
+    // controlTurnToHeading(targetTheta);
     // recenters the targetPose to the robot's current position
     targetPose.x -= startPose.x;
     targetPose.y -= startPose.y;
@@ -442,12 +464,12 @@ void controlGoToPoint(Pose_T targetPose) {
         motorSetSpeed(MOTOR_LEFT, clamp(speed - speedT, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(speed + speedT, -100, 100));
 
-        uprintf("%.3f %.3f %.3f %.3f\n", error, pose->x, pose->y, pose->theta);
+        uprintf("g: %.3f %.3f %.3f %.3f\n", error, pose->x, pose->y, pose->theta);
         vTaskDelay(1);
     }
 
-    motorHardStop(MOTOR_LEFT);
-    motorHardStop(MOTOR_RIGHT);
+    // motorHardStop(MOTOR_LEFT);
+    // motorHardStop(MOTOR_RIGHT);
 }
 
 void controlGoToPoseRAMSETE(Pose_T targetPose) {

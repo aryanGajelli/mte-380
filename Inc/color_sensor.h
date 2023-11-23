@@ -43,6 +43,7 @@ HAL_StatusTypeDef colorSensorInit();
 uint32_t colorGetFreq(ColorSensor_E sensor);
 void colorSetFreqScaling(FreqScale_E freqScale);
 HAL_StatusTypeDef colorSelectSensor(ColorSensor_E cs);
+void colorUpdate();
 double colorGetNormalizedOut(ColorSensor_E sensor);
 SurfaceType_E colorGetLineDeviation(double *out);
 void colorSet(Color_E color);
