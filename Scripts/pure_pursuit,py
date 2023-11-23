@@ -247,5 +247,5 @@ path = [[point[0]/100, point[1]/100] for point in path]
 
 
 # path_visualizer (original_path, (figure_size), (figure_x_and_y_limits), length_of_each_line_segment, max_angle_change_between_segments)
-path = path_visualizer(path, (1, 1), (-15, -2, 2, 10), 0.2, 20)
+path = path_visualizer(path, (1, 1), (-15, -2, 2, 10), 1, 20)
 plt.show()
