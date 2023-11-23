@@ -54,13 +54,14 @@ void controlTask(void *pvParameters) {
         // colorUpdate();
         // uprintf("%d %d %d\n", colorSensors.freq[0], colorSensors.freq[1], colorSensors.freq[2]);
         // uprintf("%.3f %.3f %.3f %d %f\n", colorSensors.normalizedOut.x, colorSensors.normalizedOut.y, colorSensors.normalizedOut.z, colorSensors.surface, colorSensors.lineDeviation);
-        // uprintf("%.3f %.3f %.3f %.3f\n", ADC_to_Volt(adcBuf[5]), pose->x, pose->y, pose->theta);
+        uprintf("%.3f %.3f %.3f\n", pose->x, pose->y, pose->theta);
         vTaskDelay(10);
     }
 }
 
 void controlFullSequence() {
     vector3_t path[] = {
+        {0, 0},
         {0, 150},
         {-100, 300},
         {-200, 420},
@@ -71,17 +72,22 @@ void controlFullSequence() {
     };
     size_t pathLen = sizeof(path) / sizeof(path[0]);
 
-    for (size_t i = 0; i < 2; i++) {
-        controlGoToPoint((Pose_T)path[i]);
-    }
+    // for (size_t i = 0; i < 3; i++) {
+    //     controlGoToPoint((Pose_T)path[i]);
+    // }
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
-    
-    // Pose_T *pose = odometryGetPose();
+
+    Pose_T *pose = odometryGetPose();
     // vector3_t path[] = {{pose->x, pose->y}, {-100, 300}, {-300, 500}, {-500, 600}, {-700, 750}};  //, {-450, 75}, {-600, 100}};
     // size_t pathLen = sizeof(path) / sizeof(path[0]);
     // // controlApproximateCurve(100, 10);
-    // controlPurePursuit(path, pathLen);
+    controlPurePursuit(path, pathLen);
+    motorSetSpeed(MOTOR_LEFT, -1);
+    motorSetSpeed(MOTOR_RIGHT, -1);
+    vTaskDelay(100);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
 
     // // vector3_t path2[] = {{pose->x, pose->y}, {-900, 900}};
     // // pathLen = sizeof(path2) / sizeof(path2[0]);
@@ -140,37 +146,31 @@ void controlTurnToLego() {
 }
 
 void controlPurePursuit(vector3_t *path, size_t pathLen) {
-    double linVel = 100;
-    double lookAheadRadius = 100;
+    double linVel = 70;
+    double lookAheadRadius = 70;
     size_t lastFoundIndex = 0;
 
-    double kp = 0.2, kd = 0.5;
+    double kp = 2, kd = 0.0;
     double kpL = 0.5, kdL = 0.5;
     PurePursuitOutput_T prevPP;
     PurePursuitOutput_T PP = {0, 0, 0, 0, 0};
     Pose_T *pose = odometryGetPose();
 
     double errorLin = odometryDotError((Pose_T)path[0], *pose), prevErrorLin = 0;
-    while (lastFoundIndex < pathLen - 1) {
+    while (lastFoundIndex < pathLen) {
         prevPP = PP;
         PP = controlPurePursuitStep(path, pathLen, lookAheadRadius, lastFoundIndex);
         lastFoundIndex = PP.lastFoundIndex;
         errorLin = odometryDotError((Pose_T)PP.targetPoint, *pose);
 
-        if (lastFoundIndex >= pathLen - 3) {
-            kp = (pathLen - lastFoundIndex) / 5.;
-        }
-
         double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
         prevErrorLin = errorLin;
 
-        linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
-        if (lastFoundIndex == pathLen - 2) {
-            linVel = clamp(linVel, -20, 20);
-        }
+        // linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
+
         motorSetSpeed(MOTOR_LEFT, clamp(linVel - angVel, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(linVel + angVel, -100, 100));
-        // uprintf("p: %.3f %.3f %.3f %d %.3f\n", PP.targetPoint.x, PP.targetPoint.y, PP.angError, PP.lastFoundIndex, angVel);
+        uprintf("p: %.3f %.3f %.3f %d %.3f\n", PP.targetPoint.x, PP.targetPoint.y, PP.angError, PP.lastFoundIndex, angVel);
         vTaskDelay(1);
     }
 
@@ -202,15 +202,15 @@ PurePursuitOutput_T controlPurePursuitStep(vector3_t *path, size_t pathLen, doub
             lastFoundIndex = i + 1;
             break;
         } else {
-            lastFoundIndex = i + 1;
+            lastFoundIndex = i;
         }
     }
 
-    uprintf("ps: %d %.2f %.2f i: %d %d p: %.2f %.2f %.2f %d\n", type, targetPoint.x, targetPoint.y, i, lastFoundIndex, pose->x, pose->y, pose->theta, HAL_GetTick() - start);
     // we now have target point
     double targetAng = RAD_TO_DEG(atan2(targetPoint.y - pose->y, targetPoint.x - pose->x));
     double angError = adjustTurn(targetAng - pose->theta);
 
+    // uprintf("ps: %d %.2f %.2f i: %d %d p: %.2f %.2f %.2f %.2f\n", type, targetPoint.x, targetPoint.y, i, lastFoundIndex, pose->x, pose->y, pose->theta, angError);
     return (PurePursuitOutput_T){.targetPoint = targetPoint, .lastFoundIndex = lastFoundIndex, .angError = angError};
 }
 

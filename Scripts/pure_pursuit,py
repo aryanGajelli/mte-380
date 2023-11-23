@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import math
 import matplotlib.animation as animation
 from IPython import display
+import json
 
 
 def add_line(path):
@@ -225,8 +226,23 @@ def convert(path, pathName):
 
 
 # path1 = [[0,0], [0, 1], [-2,2.5], [-3.5, 2], [-4.5, .75], [-6, 1]]
-path1 = [[0,0], [-1,3], [-3, 5], [-6, 8]]
+path = """[
+       {0, 0},
+        {0, 150},
+        {-100, 300},
+        {-200, 420},
+        {-300, 510},
+        {-500, 580},
+        {-750, 670},
+        {-900, 510}
+]"""
+
+path = path.replace('{', '[')
+path = path.replace('}', ']')
+path = json.loads(path)
+path = [[point[0]/100, point[1]/100] for point in path]
+print(path)
 
 # path_visualizer (original_path, (figure_size), (figure_x_and_y_limits), length_of_each_line_segment, max_angle_change_between_segments)
-path1 = path_visualizer(path1, (1,1), (-10, -2, 2, 10), 1, 20)
+path = path_visualizer(path, (1, 1), (-10, -2, 2, 10), 0.2, 20)
 plt.show()
