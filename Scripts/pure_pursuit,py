@@ -230,14 +230,17 @@ def convert(path, pathName):
 # path1 = [[0,0], [0, 1], [-2,2.5], [-3.5, 2], [-4.5, .75], [-6, 1]]
 path = """[
        {0, 0},
-        {0, 150},
+        {-50, 200},
         {-100, 300},
-        {-200, 420},
-        {-300, 510},
-        {-500, 580},
-        {-750, 630},
-        {-950, 600},
-        {-1200, 510}
+        {-200, 450},
+        {-350, 610},
+        {-500, 680},
+        {-750, 690},
+        {-950, 660},
+        {-1100, 600},
+        {-1350, 420},
+        {-1450, 320},
+        {-1600, 300}
 ]"""
 
 path = path.replace('{', '[')
@@ -247,5 +250,5 @@ path = [[point[0]/100, point[1]/100] for point in path]
 
 
 # path_visualizer (original_path, (figure_size), (figure_x_and_y_limits), length_of_each_line_segment, max_angle_change_between_segments)
-path = path_visualizer(path, (1, 1), (-15, -2, 2, 10), 1, 20)
+path = path_visualizer(path, (1, 1), (-20, -2, 2, 10), 0.8, 20)
 plt.show()

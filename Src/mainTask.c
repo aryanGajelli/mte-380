@@ -47,7 +47,7 @@ void mainTask(void *pvParameters) {
     }
 
     while (1) {
-        colorUpdate();
+        // colorUpdate();
         // // color readings already has delays of 5ms each
         // // moving average of samples
         // uint32_t val = colorGetFreq(COLOR_SENSOR_1);

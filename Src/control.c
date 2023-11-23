@@ -23,6 +23,7 @@ void controlTestSquare();
 void controlTestPickup();
 void controlTestSquareAbsolute();
 void controlTurnToLego();
+void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir);
 void controlFullSequence();
 
 void controlTask(void *pvParameters) {
@@ -35,18 +36,6 @@ void controlTask(void *pvParameters) {
     Pose_T *pose = odometryGetPose();
     // controlLineFollowing();
     controlFullSequence();
-    // controlTurnToLego();
-    // servoSetAngle(CLAW_OPEN_ANGLE);
-
-    vector3_t c = {.x = 0.0, .y = 10.75};
-    vector3_t out1, out2;
-    size_t i = 0;
-    double lookAheadRadius = 10;
-    // IntersectionType_E type = circleSegmentIntersection(c, lookAheadRadius, path[i], path[i + 1], &out1, &out2);
-    // vector3_t targetPoint = pickClosestIntersection(path[i + 1], out1, out2);
-    // uprintf("t:%d %.2f %.2f\n", type, targetPoint.x, targetPoint.y);
-    // uprintf("o1: %.2f %.2f\n", out1.x, out1.y);
-    // uprintf("o2: %.2f %.2f\n", out2.x, out2.y);
     while (1) {
         // IntersectionType_E type = circleSegmentIntersection(pose->v, lookAheadRadius, path[i], path[i+1], &out1, &out2);
         // vector3_t targetPoint = pickClosestIntersection(path[i+1], out1, out2);
@@ -61,15 +50,18 @@ void controlTask(void *pvParameters) {
 
 void controlFullSequence() {
     vector3_t path[] = {
-        {0, 0},
-        {0, 150},
-        {-100, 300},
-        {-200, 420},
-        {-300, 510},
-        {-500, 580},
-        {-750, 630},
-        {-950, 600},
-        {-1200, 510}};
+        {0.0, 0.0},
+        {-45.72, 152.4},
+        {-152.4, 350.52},
+        {-304.8, 496.824},
+        {-457.20000000000005, 588.264},
+        {-609.6, 640.08},
+        {-762.0, 670.5600000000001},
+        {-914.4000000000001, 649.224},
+        {-1066.8, 579.12},
+        {-1219.2, 487.68000000000006},
+        {-1271.016, 356.616},
+        {-1371.6000000000001, 304.8}};
     size_t pathLen = sizeof(path) / sizeof(path[0]);
 
     // for (size_t i = 0; i < 3; i++) {
@@ -82,7 +74,7 @@ void controlFullSequence() {
     // vector3_t path[] = {{pose->x, pose->y}, {-100, 300}, {-300, 500}, {-500, 600}, {-700, 750}};  //, {-450, 75}, {-600, 100}};
     // size_t pathLen = sizeof(path) / sizeof(path[0]);
     // // controlApproximateCurve(100, 10);
-    controlPurePursuit(path, pathLen);
+    controlPurePursuit(path, pathLen, MOTOR_FWD);
     motorSetSpeed(MOTOR_LEFT, -1);
     motorSetSpeed(MOTOR_RIGHT, -1);
     vTaskDelay(100);
@@ -145,16 +137,18 @@ void controlTurnToLego() {
     controlTurnToHeading(maxVal.y);
 }
 
-void controlPurePursuit(vector3_t *path, size_t pathLen) {
+void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir) {
+    int direction = dir == MOTOR_FWD ? 1 : -1;
     double linVel;
-    double lookAheadRadius = 70;
+    double lookAheadRadius = 50;
     size_t lastFoundIndex = 0;
 
     double kp = 2, kd = 0.0;
-    double kpL = 0.1, kdL = 0.5;
+    double kpL = 0.2, kdL = 0.5;
     PurePursuitOutput_T prevPP;
     PurePursuitOutput_T PP = {0, 0, 0, 0, 0};
     Pose_T *pose = odometryGetPose();
+    double angDirOffset = dir == MOTOR_FWD ? 0 : 180;
 
     double errorLin = odometryDotError((Pose_T)path[pathLen - 1], *pose), prevErrorLin = 0;
     while (lastFoundIndex < pathLen) {
@@ -163,13 +157,15 @@ void controlPurePursuit(vector3_t *path, size_t pathLen) {
         lastFoundIndex = PP.lastFoundIndex;
         errorLin = odometryDotError((Pose_T)path[pathLen - 1], *pose);
 
-        double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
+        // double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
+
         prevErrorLin = errorLin;
 
         linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
+        double angVel = WHEEL_TO_WHEEL_DISTANCE * sin(DEG_TO_RAD(PP.angError + angDirOffset)) * linVel / lookAheadRadius;
 
-        motorSetSpeed(MOTOR_LEFT, clamp(linVel - angVel, -100, 100));
-        motorSetSpeed(MOTOR_RIGHT, clamp(linVel + angVel, -100, 100));
+        motorSetSpeed(MOTOR_LEFT, clamp(direction * linVel - angVel, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(direction * linVel + angVel, -100, 100));
         uprintf("p: %.3f %.3f %.3f %d %.3f\n", PP.targetPoint.x, PP.targetPoint.y, PP.angError, PP.lastFoundIndex, angVel);
         vTaskDelay(1);
     }
