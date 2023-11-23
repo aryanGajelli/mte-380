@@ -61,7 +61,7 @@ void controlFullSequence() {
         {-1066.8, 624.8399999999999},
         {-1203.96, 518.16},
         {-1249.6799999999998, 472.44000000000005},
-        {-1371.6000000000001, 381.0}
+        {-1351.6000000000001, 381.0}
         };
 
     size_t pathLen = sizeof(path) / sizeof(path[0]);
@@ -88,23 +88,26 @@ void controlFullSequence() {
     vTaskDelay(100);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
+
     Pose_T legoPose = {-1513.0, 370.8};
     Pose_T endPose = {-1350, 370};
 
-    controlGoToPoint(endPose);
+    // controlGoToPoint(endPose);
     double heading = odometryGet2DAngle(legoPose, *pose);
     controlTurnToHeading(heading);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
+    
 
-    // controlTurnToLego();
+    controlTurnToLego();
+    controlMoveForward(100, 0.5);
     // // vector3_t path2[] = {{pose->x, pose->y}, {-900, 900}};
     // // pathLen = sizeof(path2) / sizeof(path2[0]);
     // // controlPurePursuit(path2, pathLen);
     // // controlGoToPoint((Pose_T)path[pathLen - 1]);
     // // double heading = RAD_TO_DEG(atan2(path[PATH_LEN - 1].y - pose->y, path[PATH_LEN - 1].x - pose->x));
     // // controlTurnToHeading(heading);
-    // servoSetAngle(CLAW_CLOSED_ANGLE);
+    servoSetAngle(CLAW_CLOSED_ANGLE);
 }
 
 void controlTurnToLego() {
@@ -114,7 +117,7 @@ void controlTurnToLego() {
     Pose_T startPose = *pose;
     vector3_t maxVal = {.x = 0, .y = pose->theta};
     int side = 0;
-    double arcAngle = 30;
+    double arcAngle = 20;
     double maxSpeed = 100;
     double maxDistVal = 1;
     double target = startPose.theta + arcAngle;
@@ -150,6 +153,7 @@ void controlTurnToLego() {
 
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
+    vTaskDelay(300);
     controlTurnToHeading(maxVal.y);
 }
 
@@ -178,7 +182,12 @@ void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir) {
         prevErrorLin = errorLin;
 
         linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
+
+        if (lastFoundIndex < 2){
+            linVel = clamp(linVel, -70,70);
+        }
         double angVel = WHEEL_TO_WHEEL_DISTANCE * sin(DEG_TO_RAD(PP.angError + angDirOffset)) * linVel / lookAheadRadius;
+
 
         motorSetSpeed(MOTOR_LEFT, clamp(direction * linVel - angVel, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(direction * linVel + angVel, -100, 100));
