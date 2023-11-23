@@ -146,7 +146,7 @@ void controlTurnToLego() {
 }
 
 void controlPurePursuit(vector3_t *path, size_t pathLen) {
-    double linVel = 70;
+    double linVel = 100;
     double lookAheadRadius = 70;
     size_t lastFoundIndex = 0;
 
