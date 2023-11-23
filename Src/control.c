@@ -51,19 +51,26 @@ void controlTask(void *pvParameters) {
 void controlFullSequence() {
     vector3_t path[] = {
         {0.0, 0.0},
-        {-45.72, 152.4},
+        {-39.624, 167.64000000000001},
         {-152.4, 350.52},
-        {-304.8, 496.824},
-        {-457.20000000000005, 588.264},
-        {-609.6, 640.08},
-        {-762.0, 670.5600000000001},
-        {-914.4000000000001, 649.224},
-        {-1066.8, 579.12},
-        {-1219.2, 487.68000000000006},
-        {-1271.016, 356.616},
-        {-1371.6000000000001, 304.8}};
-    size_t pathLen = sizeof(path) / sizeof(path[0]);
+        {-304.8, 502.92},
+        {-457.20000000000005, 594.36},
+        {-609.6, 655.32},
+        {-762.0, 688.848},
+        {-914.4000000000001, 670.5600000000001},
+        {-1066.8, 624.8399999999999},
+        {-1203.96, 518.16},
+        {-1249.6799999999998, 472.44000000000005},
+        {-1371.6000000000001, 381.0}
+        };
 
+    size_t pathLen = sizeof(path) / sizeof(path[0]);
+    vector3_t pathPostPickup[] = {
+        {0, 0},
+        {20, -100},
+        {80, -200},
+    };
+    size_t pathPostPickupLen = sizeof(pathPostPickup) / sizeof(pathPostPickup[0]);
     // for (size_t i = 0; i < 3; i++) {
     //     controlGoToPoint((Pose_T)path[i]);
     // }
@@ -75,12 +82,22 @@ void controlFullSequence() {
     // size_t pathLen = sizeof(path) / sizeof(path[0]);
     // // controlApproximateCurve(100, 10);
     controlPurePursuit(path, pathLen, MOTOR_FWD);
+
     motorSetSpeed(MOTOR_LEFT, -1);
     motorSetSpeed(MOTOR_RIGHT, -1);
     vTaskDelay(100);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
+    Pose_T legoPose = {-1513.0, 370.8};
+    Pose_T endPose = {-1350, 370};
 
+    controlGoToPoint(endPose);
+    double heading = odometryGet2DAngle(legoPose, *pose);
+    controlTurnToHeading(heading);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+
+    // controlTurnToLego();
     // // vector3_t path2[] = {{pose->x, pose->y}, {-900, 900}};
     // // pathLen = sizeof(path2) / sizeof(path2[0]);
     // // controlPurePursuit(path2, pathLen);
@@ -111,7 +128,7 @@ void controlTurnToLego() {
             motorHardStop(MOTOR_LEFT);
             motorHardStop(MOTOR_RIGHT);
             vTaskDelay(200);
-            target = startPose.theta - arcAngle / 2;
+            target = startPose.theta - arcAngle;
         }
 
         error = adjustTurn(target - pose->theta);
@@ -133,7 +150,6 @@ void controlTurnToLego() {
 
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
-    vTaskDelay(500);
     controlTurnToHeading(maxVal.y);
 }
 
@@ -419,7 +435,7 @@ void controlGoToPoint(Pose_T targetPose) {
     Pose_T startPose = *pose;
 
     double targetTheta = odometryGet2DAngle(targetPose, startPose);
-    // controlTurnToHeading(targetTheta);
+    controlTurnToHeading(targetTheta);
     // recenters the targetPose to the robot's current position
     targetPose.x -= startPose.x;
     targetPose.y -= startPose.y;
@@ -464,8 +480,8 @@ void controlGoToPoint(Pose_T targetPose) {
         vTaskDelay(1);
     }
 
-    // motorHardStop(MOTOR_LEFT);
-    // motorHardStop(MOTOR_RIGHT);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
 }
 
 void controlGoToPoseRAMSETE(Pose_T targetPose) {
