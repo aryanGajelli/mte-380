@@ -67,9 +67,9 @@ void controlFullSequence() {
         {-200, 420},
         {-300, 510},
         {-500, 580},
-        {-750, 670},
-        {-900, 510},
-    };
+        {-750, 630},
+        {-950, 600},
+        {-1200, 510}};
     size_t pathLen = sizeof(path) / sizeof(path[0]);
 
     // for (size_t i = 0; i < 3; i++) {
@@ -146,27 +146,27 @@ void controlTurnToLego() {
 }
 
 void controlPurePursuit(vector3_t *path, size_t pathLen) {
-    double linVel = 100;
+    double linVel;
     double lookAheadRadius = 70;
     size_t lastFoundIndex = 0;
 
     double kp = 2, kd = 0.0;
-    double kpL = 0.5, kdL = 0.5;
+    double kpL = 0.1, kdL = 0.5;
     PurePursuitOutput_T prevPP;
     PurePursuitOutput_T PP = {0, 0, 0, 0, 0};
     Pose_T *pose = odometryGetPose();
 
-    double errorLin = odometryDotError((Pose_T)path[0], *pose), prevErrorLin = 0;
+    double errorLin = odometryDotError((Pose_T)path[pathLen - 1], *pose), prevErrorLin = 0;
     while (lastFoundIndex < pathLen) {
         prevPP = PP;
         PP = controlPurePursuitStep(path, pathLen, lookAheadRadius, lastFoundIndex);
         lastFoundIndex = PP.lastFoundIndex;
-        errorLin = odometryDotError((Pose_T)PP.targetPoint, *pose);
+        errorLin = odometryDotError((Pose_T)path[pathLen - 1], *pose);
 
         double angVel = kp * PP.angError + kd * (PP.angError - prevPP.angError);
         prevErrorLin = errorLin;
 
-        // linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
+        linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
 
         motorSetSpeed(MOTOR_LEFT, clamp(linVel - angVel, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(linVel + angVel, -100, 100));

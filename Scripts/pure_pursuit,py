@@ -208,6 +208,8 @@ def path_visualizer(orig_path, fig_size, field_size, segment_length, maxAngle):
                  color='green', markersize=15, label='end')
     path_ax.legend()
 
+    field.gca().set_aspect('equal', adjustable='box')
+
     return path
 
 # covert to c++ 2d array format
@@ -233,16 +235,17 @@ path = """[
         {-200, 420},
         {-300, 510},
         {-500, 580},
-        {-750, 670},
-        {-900, 510}
+        {-750, 630},
+        {-950, 600},
+        {-1200, 510}
 ]"""
 
 path = path.replace('{', '[')
 path = path.replace('}', ']')
 path = json.loads(path)
 path = [[point[0]/100, point[1]/100] for point in path]
-print(path)
+
 
 # path_visualizer (original_path, (figure_size), (figure_x_and_y_limits), length_of_each_line_segment, max_angle_change_between_segments)
-path = path_visualizer(path, (1, 1), (-10, -2, 2, 10), 0.2, 20)
+path = path_visualizer(path, (1, 1), (-15, -2, 2, 10), 0.2, 20)
 plt.show()
