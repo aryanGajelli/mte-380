@@ -25,6 +25,7 @@ void controlTestSquareAbsolute();
 void controlTurnToLego();
 void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir);
 void controlFullSequence();
+void controlAlignWithLine();
 
 void controlTask(void *pvParameters) {
     while (!isControlInit) {
@@ -34,8 +35,13 @@ void controlTask(void *pvParameters) {
 
     double line;
     Pose_T *pose = odometryGetPose();
+    // controlApprochLego();
     // controlLineFollowing();
     controlFullSequence();
+    // controlTurnToLego();
+    // controlMoveForward(110, 0.7);
+    // servoSetAngle(CLAW_CLOSED_ANGLE);
+    // controlAlignWithLine();
 
     // controlGoToPoint((Pose_T){.x = 0, .y = -100, .theta = 0}, -1);
     // controlGoToPoint((Pose_T){.x = 0, .y = -100, .theta = 0}, MOTOR_BWD);
@@ -69,12 +75,6 @@ void controlFullSequence() {
         };
 
     size_t pathLen = sizeof(path) / sizeof(path[0]);
-    vector3_t pathPostPickup[] = {
-        {0, 0},
-        {20, -100},
-        {80, -200},
-    };
-    size_t pathPostPickupLen = sizeof(pathPostPickup) / sizeof(pathPostPickup[0]);
 
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
@@ -97,7 +97,7 @@ void controlFullSequence() {
     motorHardStop(MOTOR_RIGHT);
 
     controlTurnToLego();
-    controlMoveForward(110, 0.15);
+    controlMoveForward(120, 0.17);
     servoSetAngle(CLAW_CLOSED_ANGLE);
     motorSetSpeed(MOTOR_LEFT, -1);
     motorSetSpeed(MOTOR_RIGHT, -1);
@@ -107,6 +107,7 @@ void controlFullSequence() {
     
     Pose_T backupPoint = {.x = -1250, .y = pose->y, .theta = 0};
     heading = odometryGet2DAngle(backupPoint, *pose);
+
     controlTurnToHeading(heading + 180, 1);
     controlGoToPoint(backupPoint, -0.3);
     controlTurnToHeading(-90, 0);
@@ -114,16 +115,39 @@ void controlFullSequence() {
     // controlGoToPoint((Pose_T){.x = -1200, .y = 200, .theta = 0}, 0.5);
 
     servoSetAngle(CLAW_OPEN_ANGLE);
-    vTaskDelay(400);
+    // vTaskDelay(300);
+    controlMoveForward(50, 0.8);
+    vTaskDelay(600);
+    controlMoveForward(-300, 0.3);
     // controlTurnToHeading(-90, 0);
-    // controlMoveForward(-50, 0.1);
-    controlMoveForward(-600, 0.3);
+    controlMoveForward(-250, 0.3);
     controlTurnToHeading(-10, 0);
 
+    controlMoveForward(800, 0.3);
+    controlMoveForward(500, 0.3);
+    motorSetSpeed(MOTOR_LEFT, -1);
+    motorSetSpeed(MOTOR_RIGHT, -1);
+    controlGoToPoint((Pose_T){.x = 90, .y = 150, .theta = 0}, 0.3);
+}
 
-    // legoTURN = 1;
-    controlMoveForward(1300, 0.4);
-    controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0}, 0.3);
+void controlAlignWithLine() {
+    double kp = 0.5, kd = 0, ki = 0;
+    double target = 5;
+    double error = target - colorSensors.lineDeviation, prevError = 0;
+    while (fabs(error) > 0.1) {
+        colorUpdate();
+        error = target - colorSensors.lineDeviation;
+        double speed = kp * error + kd * (error - prevError);
+        prevError = error;
+        speed = clamp(speed, -100, 100);
+
+        motorSetSpeed(MOTOR_LEFT, -speed);
+        motorSetSpeed(MOTOR_RIGHT, speed);
+        uprintf("c: %.3f %.3f %.3f\n", error, speed, colorSensors.lineDeviation);
+        vTaskDelay(1);
+    }
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
 }
 
 void controlTurnToLego() {
@@ -132,13 +156,14 @@ void controlTurnToLego() {
     vector3_t maxVal = {.x = 0, .y = pose->theta};
     int side = 0;
     double arcAngle = 20;
-    double maxSpeed = 100;
+    double maxSpeed = 70;
     double maxDistVal = 1;
     double target = startPose.theta + arcAngle;
     double kp = 1, kd = 0.5;
     double error = adjustTurn(target - pose->theta);
     double prevError = error;
-    double prevVal = ADC_to_Volt(adcBuf[3]);
+    double val = ADC_to_Volt(adcBuf[3]);
+    double prevVal;
     while (fabs(error) > 1) {
         if (fabs(error) < 10 && side == 0) {
             side = 1;
@@ -150,11 +175,14 @@ void controlTurnToLego() {
 
         error = adjustTurn(target - pose->theta);
         double angVel = kp * error + kd * (error - prevError);
-        double val = ADC_to_Volt(adcBuf[3]);
-        if (fabs(val - prevVal) > 0.07) {
-            val = prevVal;
+        prevVal = val;
+        val = ADC_to_Volt(adcBuf[3]);
+
+        if (fabs(val - prevVal) > 0.2) {
+            continue;
         }
-        if (val < maxDistVal && val > maxVal.x) {
+        
+        if (val < maxDistVal && val > maxVal.x && fabs(maxVal.y - pose->theta) > 2) {
             maxVal.x = val;
             maxVal.y = pose->theta;
         }
@@ -165,9 +193,13 @@ void controlTurnToLego() {
         vTaskDelay(2);
     }
 
+    // motorSetSpeed(MOTOR_LEFT, sign(error));
+    // motorSetSpeed(MOTOR_RIGHT, -sign(error));
+
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
     vTaskDelay(300);
+    // servoSetAngle(CLAW_OPEN_ANGLE);
     controlTurnToHeading(maxVal.y, 1);
 }
 
@@ -197,11 +229,10 @@ void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir) {
 
         linVel = kpL * errorLin + kdL * (errorLin - prevErrorLin);
 
-        if (lastFoundIndex < 2){
-            linVel = clamp(linVel, -70,70);
+        if (lastFoundIndex < 2) {
+            linVel = clamp(linVel, -70, 70);
         }
         double angVel = WHEEL_TO_WHEEL_DISTANCE * sin(DEG_TO_RAD(PP.angError + angDirOffset)) * linVel / lookAheadRadius;
-
 
         motorSetSpeed(MOTOR_LEFT, clamp(direction * linVel - angVel, -100, 100));
         motorSetSpeed(MOTOR_RIGHT, clamp(direction * linVel + angVel, -100, 100));
@@ -288,34 +319,21 @@ void controlTestSquare() {
 }
 
 void controlApprochLego() {
-    double kp = 0.5, kd = 0, ki = 0;
-    double target = .5;
-    double error = target, prevError = 0;
+    double kp = 20, kd = 0.5, ki = 0;
+    double target = 0.7;
+    double error = target - ADC_to_Volt(adcBuf[3]), prevError = error;
 
     while (fabs(error) > 0.1) {
-        error = target - ADC_to_Volt(adcBuf[0]);
-        double speed = kp * error + kd * (error - prevError) + ki * error;
-        if (speed > 100) speed = 100;
-        if (speed < -100) speed = -100;
+        double val  = ADC_to_Volt(adcBuf[3]);
+        error = target - val;
+        double speed = kp * error + kd * (error - prevError);
         prevError = error;
-        motorSetSpeed(MOTOR_LEFT, -speed);
-        motorSetSpeed(MOTOR_RIGHT, speed);
-        uprintf("%.3f\n", error);
+        motorSetSpeed(MOTOR_LEFT, clamp(speed, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(speed, -100, 100));
+        uprintf("%.3f %.3f\n", error, val);
     }
-
-    target = 1;
-    error = target - ADC_to_Volt(adcBuf[0]);
-    double kp2 = 5;
-    while (fabs(error) > 0.1) {
-        error = target - ADC_to_Volt(adcBuf[0]);
-        double speed = kp2 * error;
-        if (speed > 100) speed = 100;
-        if (speed < -100) speed = -100;
-        prevError = error;
-        motorSetSpeed(MOTOR_LEFT, -speed);
-        motorSetSpeed(MOTOR_RIGHT, -speed);
-        uprintf("%.3f\n", error);
-    }
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
 }
 
 void controlLineFollowing() {
@@ -366,7 +384,7 @@ void controlTurnToHeading(double targetDeg, char legoTurn) {
     double error = adjustTurn(targetDeg - startPose.theta);
 
     if (fabs(error) < 1) return;
-    if (legoTurn){
+    if (legoTurn) {
         kp = 1.9;
     }
     double prevError = error;
@@ -431,7 +449,7 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
         prevErrorAng = errorAng;
 
         motorSetSpeed(MOTOR_LEFT, clamp(speedMultiplier * speedLin - angSpeed, -100, 100));
-        motorSetSpeed(MOTOR_RIGHT,clamp(speedMultiplier * speedLin + angSpeed, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(speedMultiplier * speedLin + angSpeed, -100, 100));
 
         uprintf("m: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose->x, pose->y, pose->theta);
     }
@@ -485,8 +503,8 @@ void controlGoToPoint(Pose_T targetPose, double speedMultiplier) {
         prevError = error;
         prevErrorT = errorT;
 
-        motorSetSpeed(MOTOR_LEFT, clamp(speedMultiplier*speed - speedT, -100, 100));
-        motorSetSpeed(MOTOR_RIGHT, clamp(speedMultiplier*speed + speedT, -100, 100));
+        motorSetSpeed(MOTOR_LEFT, clamp(speedMultiplier * speed - speedT, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(speedMultiplier * speed + speedT, -100, 100));
 
         uprintf("g: %.3f %.3f %.3f %.3f\n", error, pose->x, pose->y, pose->theta);
         vTaskDelay(1);

@@ -35,13 +35,14 @@ void mainTask(void *pvParameters) {
     uint32_t start = HAL_GetTick();
     while (!isSDemoStarted) {
         if (HAL_GetTick() - start > 5000) {
-            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
         } else {
             HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
         }
         vTaskDelay(150);
     }
-
+    vTaskDelay(1000);
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
     if (controlInit() != HAL_OK) {
         Error_Handler();
     }
