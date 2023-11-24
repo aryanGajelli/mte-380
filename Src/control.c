@@ -36,6 +36,9 @@ void controlTask(void *pvParameters) {
     Pose_T *pose = odometryGetPose();
     // controlLineFollowing();
     controlFullSequence();
+
+    // controlGoToPoint((Pose_T){.x = 0, .y = -100, .theta = 0}, -1);
+    // controlGoToPoint((Pose_T){.x = 0, .y = -100, .theta = 0}, MOTOR_BWD);
     while (1) {
         // IntersectionType_E type = circleSegmentIntersection(pose->v, lookAheadRadius, path[i], path[i+1], &out1, &out2);
         // vector3_t targetPoint = pickClosestIntersection(path[i+1], out1, out2);
@@ -48,11 +51,12 @@ void controlTask(void *pvParameters) {
     }
 }
 
+char legoTURN = 0;
 void controlFullSequence() {
     vector3_t path[] = {
         {0.0, 0.0},
         {-39.624, 167.64000000000001},
-        {-152.4, 350.52},
+        {-152.4, 360.52},
         {-304.8, 502.92},
         {-457.20000000000005, 594.36},
         {-609.6, 655.32},
@@ -61,7 +65,7 @@ void controlFullSequence() {
         {-1066.8, 624.8399999999999},
         {-1203.96, 518.16},
         {-1249.6799999999998, 472.44000000000005},
-        {-1351.6000000000001, 381.0}
+        {-1351.6000000000001, 391.0}
         };
 
     size_t pathLen = sizeof(path) / sizeof(path[0]);
@@ -71,16 +75,11 @@ void controlFullSequence() {
         {80, -200},
     };
     size_t pathPostPickupLen = sizeof(pathPostPickup) / sizeof(pathPostPickup[0]);
-    // for (size_t i = 0; i < 3; i++) {
-    //     controlGoToPoint((Pose_T)path[i]);
-    // }
+
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
 
     Pose_T *pose = odometryGetPose();
-    // vector3_t path[] = {{pose->x, pose->y}, {-100, 300}, {-300, 500}, {-500, 600}, {-700, 750}};  //, {-450, 75}, {-600, 100}};
-    // size_t pathLen = sizeof(path) / sizeof(path[0]);
-    // // controlApproximateCurve(100, 10);
     controlPurePursuit(path, pathLen, MOTOR_FWD);
 
     motorSetSpeed(MOTOR_LEFT, -1);
@@ -92,27 +91,41 @@ void controlFullSequence() {
     Pose_T legoPose = {-1513.0, 370.8};
     Pose_T endPose = {-1350, 370};
 
-    // controlGoToPoint(endPose);
     double heading = odometryGet2DAngle(legoPose, *pose);
-    controlTurnToHeading(heading);
+    controlTurnToHeading(heading, 0);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+
+    controlTurnToLego();
+    controlMoveForward(110, 0.2);
+    servoSetAngle(CLAW_CLOSED_ANGLE);
+    motorSetSpeed(MOTOR_LEFT, -1);
+    motorSetSpeed(MOTOR_RIGHT, -1);
+    vTaskDelay(300);
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
     
+    Pose_T backupPoint = {.x = -1250, .y = pose->y, .theta = 0};
+    heading = odometryGet2DAngle(backupPoint, *pose);
+    controlTurnToHeading(heading + 180, 1);
+    controlGoToPoint(backupPoint, -0.3);
+    controlTurnToHeading(-90, 0);
+    controlMoveForward(180, 0.5);
+    // controlGoToPoint((Pose_T){.x = -1200, .y = 200, .theta = 0}, 0.5);
 
-    controlTurnToLego();
-    controlMoveForward(100, 0.5);
-    // // vector3_t path2[] = {{pose->x, pose->y}, {-900, 900}};
-    // // pathLen = sizeof(path2) / sizeof(path2[0]);
-    // // controlPurePursuit(path2, pathLen);
-    // // controlGoToPoint((Pose_T)path[pathLen - 1]);
-    // // double heading = RAD_TO_DEG(atan2(path[PATH_LEN - 1].y - pose->y, path[PATH_LEN - 1].x - pose->x));
-    // // controlTurnToHeading(heading);
-    servoSetAngle(CLAW_CLOSED_ANGLE);
+    servoSetAngle(CLAW_OPEN_ANGLE);
+    vTaskDelay(300);
+    controlTurnToHeading(-90, 0);
+    controlMoveForward(-600, 0.4);
+    controlTurnToHeading(-10, 0);
+
+
+    // legoTURN = 1;
+    controlMoveForward(1300, 0.2);
+    controlGoToPoint((Pose_T){.x = 0, .y = 100, .theta = 0}, 0.2);
 }
 
 void controlTurnToLego() {
-    // servoSetAngle(50);
-    // vTaskDelay(500);
     Pose_T *pose = odometryGetPose();
     Pose_T startPose = *pose;
     vector3_t maxVal = {.x = 0, .y = pose->theta};
@@ -154,7 +167,7 @@ void controlTurnToLego() {
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
     vTaskDelay(300);
-    controlTurnToHeading(maxVal.y);
+    controlTurnToHeading(maxVal.y, 1);
 }
 
 void controlPurePursuit(vector3_t *path, size_t pathLen, MotorDirection_E dir) {
@@ -236,16 +249,16 @@ PurePursuitOutput_T controlPurePursuitStep(vector3_t *path, size_t pathLen, doub
 }
 
 void controlTestSquareAbsolute() {
-    controlGoToPoint((Pose_T){.x = 0, .y = 300, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 300, .y = 300, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 300, .y = 0, .theta = 0});
-    controlGoToPoint((Pose_T){.x = 0, .y = 0, .theta = 0});
+    controlGoToPoint((Pose_T){.x = 0, .y = 300, .theta = 0}, 1);
+    controlGoToPoint((Pose_T){.x = 300, .y = 300, .theta = 0}, 1);
+    controlGoToPoint((Pose_T){.x = 300, .y = 0, .theta = 0}, 1);
+    controlGoToPoint((Pose_T){.x = 0, .y = 0, .theta = 0}, 1);
 }
 
 void controlTestPickup() {
     controlMoveForward(350, 1);
     HAL_Delay(200);
-    controlTurnToHeading(90);
+    controlTurnToHeading(90, 0);
     HAL_Delay(200);
     controlMoveForward(150, 0.7);
     controlMoveForward(100, 0.5);
@@ -258,19 +271,19 @@ void controlTestPickup() {
 void controlTestSquare() {
     controlMoveForward(150, 1);
     HAL_Delay(200);
-    controlTurnToHeading(90);
+    controlTurnToHeading(90, 0);
     HAL_Delay(200);
     controlMoveForward(150, 1);
     HAL_Delay(200);
-    controlTurnToHeading(180);
+    controlTurnToHeading(180, 0);
     HAL_Delay(200);
     controlMoveForward(150, 1);
     HAL_Delay(200);
-    controlTurnToHeading(270);
+    controlTurnToHeading(270, 0);
     HAL_Delay(200);
     controlMoveForward(150, 1);
     HAL_Delay(200);
-    controlTurnToHeading(0);
+    controlTurnToHeading(0, 0);
 }
 
 void controlApprochLego() {
@@ -340,10 +353,10 @@ void controlLineFollowing() {
     motorHardStop(MOTOR_RIGHT);
 
     double heading = RAD_TO_DEG(atan2(300 - pose->y, -1800 - pose->x));
-    controlTurnToHeading(heading);
+    controlTurnToHeading(heading, 0);
 }
 
-void controlTurnToHeading(double targetDeg) {
+void controlTurnToHeading(double targetDeg, char legoTurn) {
     // targetDeg = -targetDeg;
     static const double ACCEPTABLE_ERROR_DEG = 1.5;
     Pose_T *pose = odometryGetPose();
@@ -352,6 +365,9 @@ void controlTurnToHeading(double targetDeg) {
     double error = adjustTurn(targetDeg - startPose.theta);
 
     if (fabs(error) < 1) return;
+    if (legoTurn){
+        kp = 1.9;
+    }
     double prevError = error;
     int dir = error > 180 ? -1 : 1;
     double integral = 0;
@@ -385,29 +401,22 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
     double kp = 0.75, kd = 0.5, ki = 0.00;
     double kpT = 1.5, kdT = 0.5, kiT = 0.00;
     double targetTheta = startPose.theta;
+    // targetTheta += speedMultiplier > 0 ? 0 : 180;
     double dist = (encLeft->dist + encRight->dist) / 2;
     targetDist += dist;
     double error = targetDist - dist;
-    double errorAng = targetTheta - startPose.theta;
-    if (errorAng > 180) {
-        errorAng -= 360;
-    } else if (errorAng < -180) {
-        errorAng += 360;
-    }
+    double errorAng = adjustTurn(targetTheta - startPose.theta);
     double prevErrorAng = errorAng;
     if (fabs(error) < ACCEPTABLE_ERROR) return;
     double prevError = error;
     double integral = 0;
+    double angSpeed = 0;
     while (fabs(error) > ACCEPTABLE_ERROR) {
         dist = (encLeft->dist + encRight->dist) / 2;
         error = targetDist - dist;
+        error *= sign(speedMultiplier);
 
-        errorAng = targetTheta - pose->theta;
-        if (errorAng > 180) {
-            errorAng -= 360;
-        } else if (errorAng < -180) {
-            errorAng += 360;
-        }
+        errorAng = adjustTurn(targetTheta - pose->theta);
 
         if (fabs(error) < 10) {
             integral += error;
@@ -420,31 +429,24 @@ void controlMoveForward(double targetDist, double speedMultiplier) {
         prevError = error;
         prevErrorAng = errorAng;
 
-        double speedL = speedLin - angSpeed;
-        double speedR = speedLin + angSpeed;
-        if (speedR > 100) speedR = 100;
-        if (speedR < -100) speedR = -100;
+        motorSetSpeed(MOTOR_LEFT, clamp(speedMultiplier * speedLin - angSpeed, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT,clamp(speedMultiplier * speedLin + angSpeed, -100, 100));
 
-        if (speedL > 100) speedL = 100;
-        if (speedL < -100) speedL = -100;
-
-        motorSetSpeed(MOTOR_LEFT, speedMultiplier * speedL);
-        motorSetSpeed(MOTOR_RIGHT, speedMultiplier * speedR);
-
-        uprintf("t: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose->x, pose->y, pose->theta);
+        uprintf("m: %.3f %.3f %.3f %.3f %.3f\n", error, speedLin, pose->x, pose->y, pose->theta);
     }
 
     motorHardStop(MOTOR_LEFT);
     motorHardStop(MOTOR_RIGHT);
 }
 
-void controlGoToPoint(Pose_T targetPose) {
+void controlGoToPoint(Pose_T targetPose, double speedMultiplier) {
     static const double ACCEPTABLE_ERROR = 5;
     Pose_T *pose = odometryGetPose();
     Pose_T startPose = *pose;
 
     double targetTheta = odometryGet2DAngle(targetPose, startPose);
-    controlTurnToHeading(targetTheta);
+    targetTheta += speedMultiplier > 0 ? 0 : 180;
+    controlTurnToHeading(targetTheta, legoTURN);
     // recenters the targetPose to the robot's current position
     targetPose.x -= startPose.x;
     targetPose.y -= startPose.y;
@@ -482,8 +484,8 @@ void controlGoToPoint(Pose_T targetPose) {
         prevError = error;
         prevErrorT = errorT;
 
-        motorSetSpeed(MOTOR_LEFT, clamp(speed - speedT, -100, 100));
-        motorSetSpeed(MOTOR_RIGHT, clamp(speed + speedT, -100, 100));
+        motorSetSpeed(MOTOR_LEFT, clamp(speedMultiplier*speed - speedT, -100, 100));
+        motorSetSpeed(MOTOR_RIGHT, clamp(speedMultiplier*speed + speedT, -100, 100));
 
         uprintf("g: %.3f %.3f %.3f %.3f\n", error, pose->x, pose->y, pose->theta);
         vTaskDelay(1);

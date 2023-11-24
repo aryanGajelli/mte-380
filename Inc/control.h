@@ -4,6 +4,7 @@
 #include "stm32f4xx_hal.h"
 #include "odometry.h"
 #include "mathUtils.h"
+#include "motors.h"
 
 typedef struct PurePursuitOutput_T {
     vector3_t targetPoint;
@@ -13,9 +14,9 @@ typedef struct PurePursuitOutput_T {
 } PurePursuitOutput_T;
 
 HAL_StatusTypeDef controlInit();
-void controlTurnToHeading(double targetDeg);
+void controlTurnToHeading(double targetDeg, char legoTurn);
 void controlMoveForward(double targetDist, double speedMultiplier);
-void controlGoToPoint(Pose_T targetPose);
+void controlGoToPoint(Pose_T targetPose, double speedMultiplier);
 void controlApprochLego();
 PurePursuitOutput_T controlPurePursuitStep(vector3_t *path, size_t pathLen, double lookAheadRadius, size_t lastFoundIndex);
 #endif  // __CONTROL_H__
