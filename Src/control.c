@@ -97,7 +97,7 @@ void controlFullSequence() {
     motorHardStop(MOTOR_RIGHT);
 
     controlTurnToLego();
-    controlMoveForward(110, 0.2);
+    controlMoveForward(110, 0.15);
     servoSetAngle(CLAW_CLOSED_ANGLE);
     motorSetSpeed(MOTOR_LEFT, -1);
     motorSetSpeed(MOTOR_RIGHT, -1);
@@ -110,19 +110,20 @@ void controlFullSequence() {
     controlTurnToHeading(heading + 180, 1);
     controlGoToPoint(backupPoint, -0.3);
     controlTurnToHeading(-90, 0);
-    controlMoveForward(180, 0.5);
+    controlMoveForward(150, 0.5);
     // controlGoToPoint((Pose_T){.x = -1200, .y = 200, .theta = 0}, 0.5);
 
     servoSetAngle(CLAW_OPEN_ANGLE);
-    vTaskDelay(300);
-    controlTurnToHeading(-90, 0);
-    controlMoveForward(-600, 0.4);
+    vTaskDelay(400);
+    // controlTurnToHeading(-90, 0);
+    // controlMoveForward(-50, 0.1);
+    controlMoveForward(-600, 0.3);
     controlTurnToHeading(-10, 0);
 
 
     // legoTURN = 1;
-    controlMoveForward(1300, 0.2);
-    controlGoToPoint((Pose_T){.x = 0, .y = 100, .theta = 0}, 0.2);
+    controlMoveForward(1300, 0.4);
+    controlGoToPoint((Pose_T){.x = 0, .y = 150, .theta = 0}, 0.3);
 }
 
 void controlTurnToLego() {
@@ -395,7 +396,7 @@ void controlTurnToHeading(double targetDeg, char legoTurn) {
 }
 
 void controlMoveForward(double targetDist, double speedMultiplier) {
-    static const double ACCEPTABLE_ERROR = 1;
+    static const double ACCEPTABLE_ERROR = 10;
     Pose_T *pose = odometryGetPose();
     Pose_T startPose = *pose;
     double kp = 0.75, kd = 0.5, ki = 0.00;
