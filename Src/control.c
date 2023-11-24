@@ -97,7 +97,7 @@ void controlFullSequence() {
     motorHardStop(MOTOR_RIGHT);
 
     controlTurnToLego();
-    controlMoveForward(120, 0.17);
+    controlMoveForward(125, 0.17);
     servoSetAngle(CLAW_CLOSED_ANGLE);
     motorSetSpeed(MOTOR_LEFT, -1);
     motorSetSpeed(MOTOR_RIGHT, -1);
@@ -156,7 +156,7 @@ void controlTurnToLego() {
     vector3_t maxVal = {.x = 0, .y = pose->theta};
     int side = 0;
     double arcAngle = 20;
-    double maxSpeed = 70;
+    double maxSpeed = 60;
     double maxDistVal = 1;
     double target = startPose.theta + arcAngle;
     double kp = 1, kd = 0.5;
