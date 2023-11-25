@@ -125,8 +125,9 @@ void controlFullSequence() {
 
     controlMoveForward(800, 0.3);
     controlMoveForward(500, 0.3);
-    motorSetSpeed(MOTOR_LEFT, -1);
-    motorSetSpeed(MOTOR_RIGHT, -1);
+    motorHardStop(MOTOR_LEFT);
+    motorHardStop(MOTOR_RIGHT);
+
     controlGoToPoint((Pose_T){.x = 90, .y = 150, .theta = 0}, 0.3);
 }
 
