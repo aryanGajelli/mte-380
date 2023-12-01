@@ -3,8 +3,8 @@
 
 #include "stm32f4xx_hal.h"
 
-#define CLAW_OPEN_ANGLE 20
-#define CLAW_CLOSED_ANGLE 130
+#define CLAW_OPEN_ANGLE 15
+#define CLAW_CLOSED_ANGLE 175
 
 HAL_StatusTypeDef servoSetAngle(float angle);
 HAL_StatusTypeDef servoSetDutyCycle(float dutyCycle);

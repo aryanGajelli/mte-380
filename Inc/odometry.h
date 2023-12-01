@@ -5,11 +5,13 @@
 #include "cmsis_os.h"
 #include "imu.h"
 #include "stm32f4xx_hal.h"
-typedef struct Pose_T {
-    float x;
-    float y;
-    float theta;
-    float dTheta;
+typedef union Pose_T {
+    vector3_t v;
+    struct {
+        double x;
+        double y;
+        double theta;
+    };
 } Pose_T;
 
 #define WHEEL_DIAMETER 42.

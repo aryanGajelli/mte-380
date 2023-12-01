@@ -4,10 +4,8 @@
 #include "cmsis_os.h"
 #include "debug.h"
 #include "encoders.h"
-#include "fusion.h"
 #include "imu.h"
 #include "imu2.h"
-#include "motion_fx.h"
 #include "stm32f4xx_hal.h"
 #include "task.h"
 
@@ -45,7 +43,7 @@ double odometryGet2DDist(Pose_T a, Pose_T b) {
 }
 
 double odometryGet2DAngle(Pose_T a, Pose_T b) {
-    return atan2(a.x - b.x, a.y - b.y) * 180 / PI;
+    return RAD_TO_DEG(atan2(a.y - b.y, a.x - b.x));
 }
 
 double odometryDot(Pose_T a, Pose_T b) {
@@ -127,16 +125,15 @@ void odometryUpdate() {
     encoderUpdate(encLeft);
     encoderUpdate(encRight);
     xSemaphoreTake(poseMutexHandle, portMAX_DELAY);
-    dTheta = yaw - pose.theta;
-    pose.theta = yaw;
+    dTheta = adjustTurn(yaw + 90) - pose.theta;
+    pose.theta = adjustTurn(yaw + 90);
 
     double dL = encLeft->dist - prevDistL;
     double dR = encRight->dist - prevDistR;
-    double LR = (encLeft->dist + encRight->dist) / 2;
     double d = (dL + dR) / 2;
 
-    pose.x += d * sin((pose.theta + dTheta / 2) * PI / 180);
-    pose.y += d * cos((pose.theta + dTheta / 2) * PI / 180);
+    pose.x += d * cos(DEG_TO_RAD(pose.theta + dTheta/2));
+    pose.y += d * sin(DEG_TO_RAD(pose.theta + dTheta/2));
     xSemaphoreGive(poseMutexHandle);
 
     prevDistL = encLeft->dist;
